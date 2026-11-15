@@ -1,0 +1,267 @@
+/* The track is the scroll distance; the hero sticks inside it. Sticky (rather
+   than a ScrollTrigger pin) keeps the hero's resting position plain CSS, which
+   the ribbon overlay needs in order to line up with it. */
+.hero-track {
+  position: relative;
+  z-index: 1;
+  height: calc(100vh + var(--hero-scroll));
+  height: calc(100svh + var(--hero-scroll));
+}
+
+.hero {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--c-dusk);
+  color: var(--c-white);
+}
+
+/* ------------------------------------------------------------------
+   Media
+------------------------------------------------------------------ */
+.hero__media {
+  position: absolute;
+  inset: 0;
+}
+
+/* The video's own edge columns, stretched sideways. On wide screens this
+   carries the sky, horizon and sea out to the viewport edges. */
+.hero__ambient {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  filter: blur(26px) saturate(1.05);
+  transform: scale(1.1);
+}
+
+/* Full height, natural width, centred. On screens narrower than the video's
+   aspect ratio it overflows sideways and behaves like `cover`. */
+.hero__video {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  aspect-ratio: 576 / 688;
+  transform: translateX(-50%);
+}
+
+@media (min-aspect-ratio: 576 / 688) {
+  .hero__video {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18%, #000 82%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 18%, #000 82%, transparent 100%);
+  }
+}
+
+.hero__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(44, 29, 87, 0.38) 0%,
+    rgba(44, 29, 87, 0) 34%,
+    rgba(44, 29, 87, 0) 72%,
+    rgba(44, 29, 87, 0.3) 100%
+  );
+}
+
+/* ------------------------------------------------------------------
+   Type
+------------------------------------------------------------------ */
+.hero__content {
+  position: absolute;
+  inset: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  padding-top: clamp(18px, 4.5svh, 60px);
+  padding-bottom: 27svh;
+  text-shadow: 0 2px 34px rgba(70, 24, 90, 0.28);
+  /* Revealed by the intro timeline once the start states are in place. */
+  visibility: hidden;
+}
+
+.logo {
+  grid-row: 1;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--logo-size);
+  font-weight: 700;
+  line-height: 0.86;
+}
+
+.logo__word {
+  display: block;
+  white-space: nowrap;
+}
+
+.logo__word--vita {
+  align-self: flex-start;
+}
+
+.logo__word--alibi {
+  align-self: flex-end;
+  margin-top: -0.04em;
+}
+
+.logo__char {
+  will-change: transform, opacity, filter;
+}
+
+.tagline {
+  grid-row: 3;
+  margin-bottom: 0.7em;
+  font-size: var(--tagline-size);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.tagline strong {
+  font-weight: 900;
+}
+
+.tagline--left {
+  grid-column: 1 / span 2;
+}
+
+.tagline--right {
+  grid-column: span 2 / -1;
+  text-align: right;
+}
+
+/* One flex item per letter: when the size is capped by the viewport height
+   the letters spread out, so the word always spans the full grid. */
+.escape {
+  grid-row: 4;
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  margin-block: -0.13em -0.17em;
+  font-size: var(--escape-size);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.escape__letter {
+  display: block;
+  flex: none;
+  overflow: hidden;
+  /* Room for glyph overshoot, so the mask doesn't shave the letter edges. */
+  padding-inline: 0.03em;
+  margin-inline: -0.03em;
+}
+
+.escape__glyph {
+  display: block;
+  will-change: transform;
+}
+
+@media (min-width: 768px) {
+  .logo {
+    grid-column: 2 / span 6;
+  }
+
+  .tagline--left {
+    grid-column: 1 / span 4;
+  }
+
+  .tagline--right {
+    grid-column: span 4 / -1;
+  }
+}
+
+@media (min-width: 1200px) {
+  .logo {
+    grid-column: 4 / span 6;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Light that takes over at the end of the video
+------------------------------------------------------------------ */
+.hero__bloom {
+  position: absolute;
+  left: var(--drop-x, 50%);
+  top: var(--drop-y, 50%);
+  width: 30vmax;
+  height: 30vmax;
+  margin: -15vmax 0 0 -15vmax;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #fff6e1 0%,
+    var(--c-light) 30%,
+    rgba(255, 227, 179, 0.7) 50%,
+    rgba(255, 227, 179, 0) 70%
+  );
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.hero__wash {
+  position: absolute;
+  inset: 0;
+  background: var(--c-light);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------
+   Scroll cue
+------------------------------------------------------------------ */
+.scroll-cue {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(14px, 3.2svh, 34px);
+  display: flex;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.42em;
+}
+
+.scroll-cue__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9em;
+  /* optically recentre: the tracking adds space after the last letter */
+  padding-left: 0.42em;
+}
+
+.scroll-cue__line {
+  width: 1px;
+  height: clamp(22px, 4.5svh, 40px);
+  background: currentColor;
+  transform-origin: top;
+  animation: scroll-cue 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes scroll-cue {
+  0% {
+    transform: scaleY(0);
+    opacity: 1;
+  }
+  60% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue__line {
+    animation: none;
+  }
+}

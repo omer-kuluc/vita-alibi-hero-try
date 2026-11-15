@@ -1,0 +1,97 @@
+/* ------------------------------------------------------------------
+   Tokens
+------------------------------------------------------------------ */
+:root {
+  --font-display: 'Cinzel Decorative', 'Cinzel', 'Times New Roman', serif;
+
+  /* Palette, sampled from the hero video and the ribbon reference. */
+  --c-white: #fffaf2;
+  --c-light: #ffe3b3; /* the light behind the door: the hero hands over to the journey on this colour */
+  --c-butter: #ffd27a;
+  --c-orange: #ff8f2e;
+  --c-coral: #ef5a32;
+  --c-rose: #f09a9c;
+  --c-lavender: #a981c2;
+  --c-dusk: #2c1d57;
+
+  /* 4 / 8 / 12 column grid */
+  --grid-cols: 4;
+  --grid-margin: 16px;
+  --grid-gutter: 12px;
+
+  /* Display type. Each size is capped by the viewport height as well as its
+     width, so the composition still fits on short screens. */
+  --logo-size: min(21.5vw, 16svh);
+  --escape-size: min(23.6vw, 24svh);
+  --tagline-size: clamp(0.62rem, 3.3vw, 1rem);
+
+  /* Scroll lengths */
+  --hero-scroll: 380vh; /* how long the hero stays pinned while the video plays */
+  --journey-h: 320vh;
+
+  --drop-size: clamp(38px, 3.8vw, 64px);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --grid-cols: 8;
+    --grid-margin: 32px;
+    --grid-gutter: 20px;
+
+    --logo-size: min(16.5vw, 17svh);
+    --escape-size: min(23.6vw, 27svh);
+    --tagline-size: clamp(1rem, 2.3vw, 1.5rem);
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --grid-cols: 12;
+    --grid-margin: clamp(48px, 4.5vw, 96px);
+    --grid-gutter: 24px;
+
+    --logo-size: min(10.6vw, 18svh);
+    --escape-size: min(23.6vw, 35svh);
+    --tagline-size: clamp(1.1rem, 1.7vw, 2.1rem);
+  }
+}
+
+/* ------------------------------------------------------------------
+   Base
+------------------------------------------------------------------ */
+body {
+  background: var(--c-dusk);
+  color: var(--c-white);
+  font-family: var(--font-display);
+}
+
+.stage {
+  position: relative;
+  /* `clip`, not `hidden`: hidden would turn this into a scroll container
+     and break the sticky hero. */
+  overflow-x: clip;
+}
+
+/* ------------------------------------------------------------------
+   Grid
+------------------------------------------------------------------ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+  column-gap: var(--grid-gutter);
+  padding-inline: var(--grid-margin);
+  width: 100%;
+}
+
+/* Press "G" to show the column grid while reviewing the layout. */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.grid-overlay span {
+  background: rgba(255, 60, 120, 0.14);
+  outline: 1px solid rgba(255, 60, 120, 0.35);
+}
