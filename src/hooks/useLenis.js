@@ -12,11 +12,17 @@ export function useLenis() {
     const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 })
     const raf = (time) => lenis.raf(time * 1000)
 
+    // Hold still until the opening sequence has finished.
+    const release = () => lenis.start()
+    if (document.documentElement.classList.contains('is-loading')) lenis.stop()
+    window.addEventListener('loader:done', release)
+
     lenis.on('scroll', ScrollTrigger.update)
     gsap.ticker.add(raf)
     gsap.ticker.lagSmoothing(0)
 
     return () => {
+      window.removeEventListener('loader:done', release)
       gsap.ticker.remove(raf)
       lenis.destroy()
     }

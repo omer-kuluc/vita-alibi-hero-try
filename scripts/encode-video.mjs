@@ -16,7 +16,7 @@ mkdirSync(outDir, { recursive: true })
 
 const result = spawnSync(
   ffmpeg,
-  ['-y', '-i', input, '-an', '-c:v', 'libwebp', '-quality', '82', '-compression_level', '6', `${outDir}/frame-%03d.webp`],
+  ['-y', '-i', input, '-an', '-c:v', 'libwebp', '-quality', '72', '-compression_level', '6', `${outDir}/frame-%03d.webp`],
   { stdio: ['ignore', 'inherit', 'inherit'] },
 )
 

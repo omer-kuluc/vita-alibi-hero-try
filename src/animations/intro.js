@@ -5,7 +5,7 @@ const FONT = '"Cinzel Decorative"'
 
 // Resolves once the three weights the hero uses are ready, or after a short
 // grace period, so a slow font can never leave the hero blank.
-function fontsReady() {
+export function fontsReady() {
   if (!document.fonts?.load) return Promise.resolve()
   const loads = [400, 700, 900].map((weight) => document.fonts.load(`${weight} 1em ${FONT}`))
   loads.push(document.fonts.load('400 1em Sriracha', 'ğşıİ'))
@@ -17,13 +17,15 @@ function fontsReady() {
  * Entrance of the hero type. It only animates the innermost elements
  * (characters, words, glyphs); the scroll timeline moves their wrappers, so
  * scrolling during the intro never fights it.
+ *
+ * Returns a function that starts it; the loader calls that as it opens.
  */
 export function createIntro({ q, reduced }) {
   const content = q('.hero__content')
 
   if (reduced) {
     gsap.set(content, { autoAlpha: 1 })
-    return
+    return () => {}
   }
 
   const vita = SplitText.create(q('.logo__word--vita'), { type: 'chars', charsClass: 'logo__char' })
@@ -43,7 +45,7 @@ export function createIntro({ q, reduced }) {
   const tl = gsap.timeline({ paused: true, defaults: { ease: 'expo.out' } })
 
   tl.set(content, { autoAlpha: 1 })
-    .from(q('.hero__media'), { scale: 1.14, autoAlpha: 0, duration: 2.6, ease: 'power3.out' }, 0)
+    .from(q('.hero__media'), { scale: 1.12, duration: 3, ease: 'power2.out' }, 0)
     .from(vita.chars, rise, 0.35)
     .from(alibi.chars, rise, 0.6)
     .from(
@@ -66,5 +68,5 @@ export function createIntro({ q, reduced }) {
     )
     .from(q('.scroll-cue__inner'), { opacity: 0, y: 10, duration: 1, ease: 'power2.out' }, 2.2)
 
-  fontsReady().then(() => tl.play())
+  return () => tl.play()
 }

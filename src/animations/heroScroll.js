@@ -8,8 +8,10 @@ const VIDEO_END = 0.86
 /**
  * Everything that happens while the hero is pinned, driven 1:1 by scroll
  * position. Timeline positions are fractions of the pinned scroll distance.
+ *
+ * `onProgress(0..1)` reports how many video frames are decoded and ready.
  */
-export function createHeroScroll({ q }) {
+export function createHeroScroll({ q, onProgress }) {
   const playhead = { progress: 0 }
 
   const tl = gsap.timeline({
@@ -47,22 +49,24 @@ export function createHeroScroll({ q }) {
   // the whole hero is one colour.
   tl.fromTo(q('.drop__reveal'), { opacity: 0 }, { opacity: 1, duration: 0.03 }, VIDEO_END)
     .fromTo(q('.drop__reveal'), { scale: 0.3 }, { scale: 1, duration: 0.11, ease: 'power1.inOut' }, 0.885)
-    .fromTo(q('.hero__bloom'), { scale: 0 }, { scale: 16, duration: 0.115, ease: 'power2.in' }, 0.88)
+    .fromTo(q('.hero__bloom'), { scale: 0 }, { scale: 2.8, duration: 0.115, ease: 'power2.in' }, 0.88)
     .fromTo(q('.hero__wash'), { opacity: 0 }, { opacity: 1, duration: 0.05 }, 0.95)
 
   return bindFrames({
     canvas: q('.hero__video')[0],
     ambient: q('.hero__ambient')[0],
-    loading: q('.hero__loading')[0],
     playhead,
+    onProgress,
   })
 }
 
 /**
- * Draws the video as a sequence of pre-decoded stills. Scrolling never asks
- * the browser to decode anything; it only picks a frame and paints it.
+ * Draws the video as a sequence of stills that are fully decoded before the
+ * hero opens. Scrolling never asks the browser to decode anything; it only
+ * picks a frame and paints it. Frames are never blended: where the camera
+ * moves fast, a blend of two frames shows as a double image.
  */
-function bindFrames({ canvas, ambient, loading, playhead }) {
+function bindFrames({ canvas, ambient, playhead, onProgress }) {
   const ctx = canvas.getContext('2d')
   canvas.width = VIDEO.width
   canvas.height = VIDEO.height
@@ -84,77 +88,108 @@ function bindFrames({ canvas, ambient, loading, playhead }) {
   feather.addColorStop(0.82, '#000')
   feather.addColorStop(1, 'rgba(0,0,0,0)')
 
-  const frames = new Array(VIDEO.frames)
-  const ready = new Uint8Array(VIDEO.frames)
-  let loaded = 0
+  // Decoded frames cost memory (about 1.6 MB each). Phones and low-memory
+  // devices keep every second one.
+  const light = window.matchMedia('(max-width: 767px)').matches || (navigator.deviceMemory ?? 8) <= 4
+  const step = light ? 2 : 1
+  const sources = []
+  for (let i = 0; i < VIDEO.frames; i += step) sources.push(VIDEO.frameSrc(i))
+  const count = sources.length
+
+  const frames = new Array(count).fill(null)
+  let disposed = false
   let drawn = -1
   let dirty = true
 
-  // The closest frame that has arrived, so scrolling works while loading.
-  const nearestReady = (index) => {
-    for (let d = 0; d < VIDEO.frames; d++) {
-      if (index - d >= 0 && ready[index - d]) return index - d
-      if (index + d < VIDEO.frames && ready[index + d]) return index + d
+  // The closest frame that is ready, in case one failed to load.
+  const nearest = (index) => {
+    for (let d = 0; d < count; d++) {
+      if (index - d >= 0 && frames[index - d]) return frames[index - d]
+      if (index + d < count && frames[index + d]) return frames[index + d]
     }
-    return -1
+    return null
   }
 
   const paint = (index) => {
-    const frame = frames[index]
+    const base = nearest(index)
+    if (!base) return false
     const { width: w, height: h } = canvas
+
     ctx.globalCompositeOperation = 'source-over'
-    ctx.clearRect(0, 0, w, h)
-    ctx.drawImage(frame, 0, 0, w, h)
+    ctx.drawImage(base, 0, 0, w, h)
     if (wide.matches) {
       ctx.globalCompositeOperation = 'destination-in'
       ctx.fillStyle = feather
       ctx.fillRect(0, 0, w, h)
     }
 
-    const strip = frame.naturalWidth * VIDEO.edgeStrip
-    const fh = frame.naturalHeight
-    ambientCtx.drawImage(frame, 0, 0, strip, fh, 0, 0, 2, ambient.height)
-    ambientCtx.drawImage(frame, frame.naturalWidth - strip, 0, strip, fh, 2, 0, 2, ambient.height)
+    const strip = base.width * VIDEO.edgeStrip
+    ambientCtx.drawImage(base, 0, 0, strip, base.height, 0, 0, 2, ambient.height)
+    ambientCtx.drawImage(base, base.width - strip, 0, strip, base.height, 2, 0, 2, ambient.height)
+    return true
   }
 
   // Ease towards the scroll position rather than jumping to it.
   let current = 0
   const tick = () => {
-    const target = playhead.progress * (VIDEO.frames - 1)
+    const target = playhead.progress * (count - 1)
     current += (target - current) * 0.25
     if (Math.abs(target - current) < 0.01) current = target
-    const index = nearestReady(Math.round(current))
-    if (index < 0 || (index === drawn && !dirty)) return
-    paint(index)
-    drawn = index
-    dirty = false
+    const index = Math.round(current)
+    if (!dirty && index === drawn) return
+    if (paint(index)) {
+      drawn = index
+      dirty = false
+    }
   }
   gsap.ticker.add(tick)
 
-  const onResize = () => {
+  const invalidate = () => {
     dirty = true
   }
-  wide.addEventListener('change', onResize)
+  wide.addEventListener('change', invalidate)
 
-  for (let i = 0; i < VIDEO.frames; i++) {
-    const image = new Image()
-    image.decoding = 'async'
-    image.onload = () => {
-      ready[i] = 1
-      loaded++
-      dirty = true
-      loading.style.transform = `scaleX(${loaded / VIDEO.frames})`
-      if (loaded === VIDEO.frames) loading.classList.add('is-done')
+  // createImageBitmap hands back a bitmap that is ready to draw; the fallback
+  // decodes an <img> explicitly.
+  const decode = async (src) => {
+    if ('createImageBitmap' in window) {
+      const response = await fetch(src)
+      if (!response.ok) throw new Error(`${src}: ${response.status}`)
+      return createImageBitmap(await response.blob())
     }
-    image.src = VIDEO.frameSrc(i)
-    frames[i] = image
+    const image = new Image()
+    image.src = src
+    await image.decode()
+    return image
   }
 
+  // Fetch and decode a few at a time.
+  let nextIndex = 0
+  let done = 0
+  const worker = async () => {
+    while (!disposed && nextIndex < count) {
+      const i = nextIndex++
+      try {
+        const frame = await decode(sources[i])
+        if (disposed) {
+          frame.close?.()
+          return
+        }
+        frames[i] = frame
+      } catch (error) {
+        console.warn('Hero frame failed to load', error)
+      }
+      done++
+      if (i === 0) dirty = true
+      onProgress?.(done / count)
+    }
+  }
+  for (let n = 0; n < 6; n++) worker()
+
   return () => {
+    disposed = true
     gsap.ticker.remove(tick)
-    wide.removeEventListener('change', onResize)
-    frames.forEach((image) => {
-      image.onload = null
-    })
+    wide.removeEventListener('change', invalidate)
+    frames.forEach((frame) => frame?.close?.())
   }
 }

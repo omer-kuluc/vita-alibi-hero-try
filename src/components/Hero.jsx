@@ -39,7 +39,6 @@ export default function Hero() {
 
         <div className="hero__bloom" aria-hidden="true" />
         <div className="hero__wash" aria-hidden="true" />
-        <i className="hero__loading" aria-hidden="true" />
 
         <div className="scroll-cue" aria-hidden="true">
           <div className="scroll-cue__inner">

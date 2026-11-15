@@ -1,0 +1,101 @@
+/* No scrolling until the hero has opened. Lenis is stopped separately. */
+html.is-loading {
+  overflow: hidden;
+}
+
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  color: var(--c-white);
+  font-family: var(--font-display);
+}
+
+/* The hero's first frame, blurred and slightly dimmed so the lettering reads.
+   The blur is static, so it is rasterised once; the handover to the hero only
+   animates opacity. The solid colour shows until the frame arrives. */
+.loader__bg {
+  position: absolute;
+  inset: -8%;
+  background-color: #6b4672;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px) brightness(0.82) saturate(1.05);
+}
+
+/* RE spans both rows; everything else is sized relative to it.
+     d   RE  am
+     %   RE  ality                                                   */
+.loader__lockup {
+  --re: min(27vw, 30svh, 15rem);
+
+  position: relative;
+  display: grid;
+  /* Fixed side columns: the count changing width must not nudge the letters. */
+  grid-template-columns: 0.9em auto 1.25em;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: calc(var(--re) * 0.07);
+  font-size: var(--re);
+  line-height: 0.8;
+  text-shadow: 0 2px 30px rgba(60, 24, 80, 0.3);
+  /* Shown once the font is in, so it never flashes in a fallback face. */
+  opacity: 0;
+}
+
+.loader__re {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-weight: 700;
+}
+
+.loader__d,
+.loader__am,
+.loader__ality {
+  font-size: 0.42em;
+  font-weight: 400;
+  line-height: 0.92;
+}
+
+.loader__d {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: end;
+}
+
+.loader__am {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.loader__ality {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.loader__d,
+.loader__am {
+  opacity: 0.16;
+}
+
+.loader__percent {
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: end;
+  display: flex;
+  align-items: baseline;
+  gap: 0.15em;
+  white-space: nowrap;
+  font-size: clamp(0.85rem, 0.16em, 2.2rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.loader__sign {
+  font-size: 0.7em;
+  opacity: 0.7;
+}

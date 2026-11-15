@@ -12,8 +12,10 @@ import Hero from './components/Hero'
 import Journey from './components/Journey'
 import Trail from './components/Trail'
 import GridOverlay from './components/GridOverlay'
+import Loader from './components/Loader'
 import { useLenis } from './hooks/useLenis'
 import { createIntro } from './animations/intro'
+import { createLoader } from './animations/loader'
 import { createHeroScroll } from './animations/heroScroll'
 import { createTrail } from './animations/trail'
 
@@ -33,11 +35,13 @@ function App() {
       const q = gsap.utils.selector(stage)
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-      createIntro({ q, reduced })
-      const disposeHero = createHeroScroll({ q })
+      const playIntro = createIntro({ q, reduced })
+      const loader = createLoader({ q, reduced, onOpen: playIntro })
+      const disposeHero = createHeroScroll({ q, onProgress: loader.setProgress })
       const disposeTrail = createTrail({ q, stage: stage.current, reduced })
 
       return () => {
+        loader.dispose()
         disposeHero()
         disposeTrail()
       }
@@ -50,6 +54,7 @@ function App() {
       <Hero />
       <Journey />
       <Trail />
+      <Loader />
       <GridOverlay />
     </main>
   )
