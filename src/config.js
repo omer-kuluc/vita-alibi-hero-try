@@ -1,7 +1,8 @@
 // Facts about the hero video that layout and animation both depend on.
 export const VIDEO = {
-  // All-keyframe copy of public/images/hero-video.mp4 (npm run video:encode).
-  src: '/images/hero-video-scrub.mp4',
+  // Still frames of public/images/hero-video.mp4 (npm run video:encode).
+  frames: 125,
+  frameSrc: (index) => `/images/hero-frames/frame-${String(index + 1).padStart(3, '0')}.webp`,
   width: 576,
   height: 688,
   // Position (0..1 of the frame) of the drop in the final frame that the
@@ -11,3 +12,10 @@ export const VIDEO = {
   // fill the space beside the video on wide screens.
   edgeStrip: 0.05,
 }
+
+// One note per bend of the ribbon, in order.
+export const NOTES = [
+  'Vita Alibi, alternatif bir evrende sizlere tatil seçeneği sunan bir hizmet.',
+  'Hayatlarımız sürekli ilerlemek zorunda kaldığımız yollardan oluşuyor.',
+  'Ve bu yolların belirlediği rota, yol ayrımlarında yaptığımız seçimlerden oluşuyor.',
+]

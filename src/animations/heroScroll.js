@@ -10,8 +10,6 @@ const VIDEO_END = 0.86
  * position. Timeline positions are fractions of the pinned scroll distance.
  */
 export function createHeroScroll({ q }) {
-  const video = q('.hero__video')[0]
-  const ambient = q('.hero__ambient')[0]
   const playhead = { progress: 0 }
 
   const tl = gsap.timeline({
@@ -22,7 +20,7 @@ export function createHeroScroll({ q }) {
       end: 'bottom bottom',
       // No extra smoothing here: the handover has to be finished at exactly
       // the scroll position where the hero is released. Lenis smooths the
-      // scroll itself, and the video is eased separately below.
+      // scroll itself, and the frames are eased separately below.
       scrub: true,
     },
   })
@@ -30,104 +28,133 @@ export function createHeroScroll({ q }) {
   tl.to(playhead, { progress: 1, duration: VIDEO_END }, 0)
 
   // The type clears out as the camera starts moving towards the door.
+  // Transforms and opacity only: these run on every scroll tick.
   tl.to(q('.scroll-cue'), { opacity: 0, duration: 0.03 }, 0)
     .to(q('.tagline'), { opacity: 0, y: -24, duration: 0.09, ease: 'power1.in' }, 0.015)
     .to(
       q('.logo__word'),
-      { yPercent: -70, opacity: 0, filter: 'blur(10px)', duration: 0.15, stagger: 0.025, ease: 'power1.in' },
+      { yPercent: -70, opacity: 0, duration: 0.15, stagger: 0.025, ease: 'power1.in' },
       0.02,
     )
     .to(
       q('.escape__letter'),
-      {
-        xPercent: (i) => (i - 2.5) * 34,
-        yPercent: -26,
-        opacity: 0,
-        filter: 'blur(12px)',
-        duration: 0.2,
-        ease: 'power1.in',
-      },
+      { xPercent: (i) => (i - 2.5) * 34, yPercent: -26, opacity: 0, duration: 0.2, ease: 'power1.in' },
       0.04,
     )
 
-  // Handover. A glint marks one drop in the final frame, ours grows out of it,
-  // then the light spreads from that point until the whole hero is one colour.
-  tl.fromTo(
-    q('.drop__ring'),
-    { scale: 0.2, opacity: 0 },
-    { scale: 1, opacity: 1, duration: 0.02, ease: 'power2.out' },
-    VIDEO_END - 0.005,
-  )
-    .to(q('.drop__ring'), { scale: 2.6, opacity: 0, duration: 0.05 }, VIDEO_END + 0.015)
-    .fromTo(
-      q('.drop__reveal'),
-      { scale: 0, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 0.05, ease: 'back.out(2)' },
-      VIDEO_END,
-    )
+  // Handover. Our drop fades in over one drop of the final frame, at that
+  // drop's size, then grows while the light spreads from the same point until
+  // the whole hero is one colour.
+  tl.fromTo(q('.drop__reveal'), { opacity: 0 }, { opacity: 1, duration: 0.03 }, VIDEO_END)
+    .fromTo(q('.drop__reveal'), { scale: 0.3 }, { scale: 1, duration: 0.11, ease: 'power1.inOut' }, 0.885)
     .fromTo(q('.hero__bloom'), { scale: 0 }, { scale: 16, duration: 0.115, ease: 'power2.in' }, 0.88)
     .fromTo(q('.hero__wash'), { opacity: 0 }, { opacity: 1, duration: 0.05 }, 0.95)
 
-  return bindVideo(video, ambient, playhead)
+  return bindFrames({
+    canvas: q('.hero__video')[0],
+    ambient: q('.hero__ambient')[0],
+    loading: q('.hero__loading')[0],
+    playhead,
+  })
 }
 
-/** Keeps the video (and the stretched edges beside it) on the playhead. */
-function bindVideo(video, ambient, playhead) {
-  const ctx = ambient.getContext('2d')
-  ambient.width = 4
-  ambient.height = 172
-  ctx.imageSmoothingQuality = 'high'
+/**
+ * Draws the video as a sequence of pre-decoded stills. Scrolling never asks
+ * the browser to decode anything; it only picks a frame and paints it.
+ */
+function bindFrames({ canvas, ambient, loading, playhead }) {
+  const ctx = canvas.getContext('2d')
+  canvas.width = VIDEO.width
+  canvas.height = VIDEO.height
 
-  // Left half of the canvas is the video's left edge, right half its right
-  // edge; CSS stretches the canvas across the whole hero.
-  const paint = () => {
-    if (video.readyState < 2) return
-    const { videoWidth: w, videoHeight: h } = video
-    const strip = Math.max(1, w * VIDEO.edgeStrip)
-    ctx.drawImage(video, 0, 0, strip, h, 0, 0, 2, ambient.height)
-    ctx.drawImage(video, w - strip, 0, strip, h, 2, 0, 2, ambient.height)
+  // A handful of pixels, stretched over the whole hero by CSS. The upscale
+  // turns them into a soft wash of the video's edge colours.
+  const ambientCtx = ambient.getContext('2d')
+  ambient.width = 4
+  ambient.height = 12
+  ambientCtx.imageSmoothingQuality = 'high'
+
+  // On screens wider than the video its sides fade into that wash. The fade is
+  // painted into the canvas, which is far cheaper than a CSS mask on a layer
+  // that changes every frame.
+  const wide = window.matchMedia(`(min-aspect-ratio: ${VIDEO.width} / ${VIDEO.height})`)
+  const feather = ctx.createLinearGradient(0, 0, VIDEO.width, 0)
+  feather.addColorStop(0, 'rgba(0,0,0,0)')
+  feather.addColorStop(0.18, '#000')
+  feather.addColorStop(0.82, '#000')
+  feather.addColorStop(1, 'rgba(0,0,0,0)')
+
+  const frames = new Array(VIDEO.frames)
+  const ready = new Uint8Array(VIDEO.frames)
+  let loaded = 0
+  let drawn = -1
+  let dirty = true
+
+  // The closest frame that has arrived, so scrolling works while loading.
+  const nearestReady = (index) => {
+    for (let d = 0; d < VIDEO.frames; d++) {
+      if (index - d >= 0 && ready[index - d]) return index - d
+      if (index + d < VIDEO.frames && ready[index + d]) return index + d
+    }
+    return -1
   }
 
-  // Ease towards the scroll position instead of jumping to it, and never
-  // queue a seek while one is still in flight.
+  const paint = (index) => {
+    const frame = frames[index]
+    const { width: w, height: h } = canvas
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.clearRect(0, 0, w, h)
+    ctx.drawImage(frame, 0, 0, w, h)
+    if (wide.matches) {
+      ctx.globalCompositeOperation = 'destination-in'
+      ctx.fillStyle = feather
+      ctx.fillRect(0, 0, w, h)
+    }
+
+    const strip = frame.naturalWidth * VIDEO.edgeStrip
+    const fh = frame.naturalHeight
+    ambientCtx.drawImage(frame, 0, 0, strip, fh, 0, 0, 2, ambient.height)
+    ambientCtx.drawImage(frame, frame.naturalWidth - strip, 0, strip, fh, 2, 0, 2, ambient.height)
+  }
+
+  // Ease towards the scroll position rather than jumping to it.
   let current = 0
   const tick = () => {
-    if (!video.duration) return
-    const target = playhead.progress * (video.duration - 0.04)
-    current += (target - current) * 0.2
-    if (Math.abs(target - current) < 0.002) current = target
-    if (!video.seeking && Math.abs(video.currentTime - current) > 0.008) {
-      video.currentTime = current
-    }
+    const target = playhead.progress * (VIDEO.frames - 1)
+    current += (target - current) * 0.25
+    if (Math.abs(target - current) < 0.01) current = target
+    const index = nearestReady(Math.round(current))
+    if (index < 0 || (index === drawn && !dirty)) return
+    paint(index)
+    drawn = index
+    dirty = false
   }
   gsap.ticker.add(tick)
 
-  let frameCallback = 0
-  const hasFrameCallback = 'requestVideoFrameCallback' in video
-  if (hasFrameCallback) {
-    const onFrame = () => {
-      paint()
-      frameCallback = video.requestVideoFrameCallback(onFrame)
-    }
-    frameCallback = video.requestVideoFrameCallback(onFrame)
+  const onResize = () => {
+    dirty = true
   }
-  video.addEventListener('seeked', paint)
-  video.addEventListener('loadeddata', paint)
-  paint()
+  wide.addEventListener('change', onResize)
 
-  // iOS only allows seeking a video after it has been played once.
-  const prime = () => {
-    const attempt = video.play()
-    if (attempt) attempt.then(() => video.pause()).catch(() => {})
+  for (let i = 0; i < VIDEO.frames; i++) {
+    const image = new Image()
+    image.decoding = 'async'
+    image.onload = () => {
+      ready[i] = 1
+      loaded++
+      dirty = true
+      loading.style.transform = `scaleX(${loaded / VIDEO.frames})`
+      if (loaded === VIDEO.frames) loading.classList.add('is-done')
+    }
+    image.src = VIDEO.frameSrc(i)
+    frames[i] = image
   }
-  prime()
-  window.addEventListener('touchstart', prime, { once: true, passive: true })
 
   return () => {
     gsap.ticker.remove(tick)
-    if (hasFrameCallback) video.cancelVideoFrameCallback(frameCallback)
-    video.removeEventListener('seeked', paint)
-    video.removeEventListener('loadeddata', paint)
-    window.removeEventListener('touchstart', prime)
+    wide.removeEventListener('change', onResize)
+    frames.forEach((image) => {
+      image.onload = null
+    })
   }
 }

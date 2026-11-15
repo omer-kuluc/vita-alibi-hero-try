@@ -6,6 +6,7 @@ import { SplitText } from 'gsap/SplitText'
 import '@fontsource/cinzel-decorative/400.css'
 import '@fontsource/cinzel-decorative/700.css'
 import '@fontsource/cinzel-decorative/900.css'
+import '@fontsource/sriracha/400.css'
 import './App.css'
 import Hero from './components/Hero'
 import Journey from './components/Journey'
@@ -34,7 +35,7 @@ function App() {
 
       createIntro({ q, reduced })
       const disposeHero = createHeroScroll({ q })
-      const disposeTrail = createTrail({ q, stage: stage.current })
+      const disposeTrail = createTrail({ q, stage: stage.current, reduced })
 
       return () => {
         disposeHero()

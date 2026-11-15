@@ -3,6 +3,7 @@
 ------------------------------------------------------------------ */
 :root {
   --font-display: 'Cinzel Decorative', 'Cinzel', 'Times New Roman', serif;
+  --font-body: 'Sriracha', 'Segoe Print', cursive;
 
   /* Palette, sampled from the hero video and the ribbon reference. */
   --c-white: #fffaf2;
@@ -27,7 +28,7 @@
 
   /* Scroll lengths */
   --hero-scroll: 380vh; /* how long the hero stays pinned while the video plays */
-  --journey-h: 320vh;
+  --journey-h: 250vh;
 
   --drop-size: clamp(38px, 3.8vw, 64px);
 }

@@ -1,4 +1,3 @@
-import { VIDEO } from '../config'
 import './Hero.css'
 
 // Cinzel Decorative keeps its swash capitals in the uppercase slots and plain
@@ -12,14 +11,7 @@ export default function Hero() {
       <section className="hero">
         <div className="hero__media" aria-hidden="true">
           <canvas className="hero__ambient" />
-          <video
-            className="hero__video"
-            src={VIDEO.src}
-            muted
-            playsInline
-            preload="auto"
-            disablePictureInPicture
-          />
+          <canvas className="hero__video" />
           <div className="hero__shade" />
         </div>
 
@@ -47,6 +39,7 @@ export default function Hero() {
 
         <div className="hero__bloom" aria-hidden="true" />
         <div className="hero__wash" aria-hidden="true" />
+        <i className="hero__loading" aria-hidden="true" />
 
         <div className="scroll-cue" aria-hidden="true">
           <div className="scroll-cue__inner">

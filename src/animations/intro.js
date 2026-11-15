@@ -8,6 +8,7 @@ const FONT = '"Cinzel Decorative"'
 function fontsReady() {
   if (!document.fonts?.load) return Promise.resolve()
   const loads = [400, 700, 900].map((weight) => document.fonts.load(`${weight} 1em ${FONT}`))
+  loads.push(document.fonts.load('400 1em Sriracha', 'ğşıİ'))
   const timeout = new Promise((resolve) => setTimeout(resolve, 1800))
   return Promise.race([Promise.all(loads), timeout]).catch(() => {})
 }

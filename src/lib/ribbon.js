@@ -9,7 +9,8 @@
 
 const NIB_ANGLE = (-45 * Math.PI) / 180
 const SAMPLES = 640
-const STEP_EVERY = 3
+// One and a half waves: three bends, one for each note.
+const WAVES = 1.5
 
 const clamp = (min, max, v) => Math.min(max, Math.max(min, v))
 const smooth = (a, b, v) => {
@@ -29,11 +30,7 @@ const fmt = (x, y) => `${x.toFixed(1)},${y.toFixed(1)}`
 export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
   const narrow = width < 768
   const amplitude = width * (narrow ? 0.3 : 0.25)
-  // Steepest sideways slope (dx/dy) the meander may reach. It decides how many
-  // bends fit, and it has to exceed 1 for the ribbon to twist at all.
-  const maxSlope = narrow ? 1.3 : 1.9
-  const wavelength = (2 * Math.PI * amplitude) / maxSlope
-  const waves = clamp(1.5, 4, Math.round((span / wavelength) * 2) / 2)
+  const waves = WAVES
   const centre = width / 2
 
   // --- centreline ---------------------------------------------------
@@ -141,13 +138,16 @@ export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
     return at / length[SAMPLES]
   }
 
-  // Cross lines along the nib, like the steps in the reference.
-  const steps = []
-  for (let i = STEP_EVERY; i < SAMPLES; i += STEP_EVERY) steps.push(`M${left[i]}L${right[i]}`)
+  // Where the meander turns: the outermost point of each bend.
+  const bends = []
+  for (let n = 0; n < waves * 2; n++) {
+    const i = Math.round(((0.25 + n * 0.5) / waves) * SAMPLES)
+    bends.push({ k: i, x: px[i], y: py[i], side: px[i] >= centre ? 1 : -1 })
+  }
 
   return {
     count: SAMPLES,
-    waves,
+    bends,
     spineD: spine.d,
     edgeD: edge.d,
     end: { x: px[SAMPLES], y: py[SAMPLES] },
@@ -173,7 +173,6 @@ export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
       return {
         front,
         back,
-        steps: steps.slice(0, Math.floor(solid / STEP_EVERY)).join(''),
         spine: fractionAt(spine.length, k),
         edge: fractionAt(edge.length, solid),
         x,

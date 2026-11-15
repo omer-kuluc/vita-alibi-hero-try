@@ -1,4 +1,4 @@
-/* Overlay that starts at the hero's resting position and runs to the end of
+/* Overlays that start at the hero's resting position and run to the end of
    the journey. `top`, `width` and `height` are set from JS. */
 .trail {
   position: absolute;
@@ -28,12 +28,6 @@
   stroke-linejoin: round;
 }
 
-.ribbon__steps {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.16);
-  stroke-width: 1;
-}
-
 .ribbon__edge {
   fill: none;
   stroke: rgba(255, 246, 222, 0.8);
@@ -42,18 +36,138 @@
   stroke-linejoin: round;
 }
 
-.ripples__ring {
-  fill: none;
-  stroke: #ffeccb;
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-  opacity: 0;
+/* ------------------------------------------------------------------
+   Notes: one parchment per bend
+------------------------------------------------------------------ */
+.notes {
+  /* The parchment is coloured for the section it sits on, so the text on it
+     can stay white like the hero. Override these two per section. */
+  --parchment: #8262ad;
+  --parchment-deep: #5a3f88;
+  --note-cols: 2;
+
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  width: 100%;
+  pointer-events: none;
 }
 
-.ripples__glow {
-  opacity: 0;
+.note {
+  position: absolute;
+  /* phones: just under half the width, the ribbon keeps the rest */
+  width: 47%;
+  /* ...and sit mostly below the bend: above it the ribbon is still crossing
+     over from the other side. */
+  transform: translateY(-6%);
+  visibility: hidden;
 }
 
+.note.is-left {
+  left: var(--grid-margin);
+}
+
+.note.is-right {
+  right: var(--grid-margin);
+}
+
+.note__body {
+  position: relative;
+  transform: rotate(-1.6deg);
+  filter: drop-shadow(0 14px 18px rgba(74, 40, 96, 0.22));
+}
+
+.note.is-right .note__body {
+  transform: rotate(1.4deg);
+}
+
+.note__sheet {
+  padding: clamp(22px, 2.4vw, 38px) clamp(18px, 2.2vw, 36px) clamp(24px, 2.6vw, 40px);
+  color: var(--c-white);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 5px),
+    linear-gradient(
+      90deg,
+      var(--parchment-deep) 0%,
+      var(--parchment) 9%,
+      color-mix(in srgb, var(--parchment) 86%, white) 50%,
+      var(--parchment) 91%,
+      var(--parchment-deep) 100%
+    );
+}
+
+.note__index {
+  display: block;
+  margin-bottom: 0.5em;
+  font-family: var(--font-display);
+  font-size: clamp(0.7rem, 1vw, 0.95rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.3em;
+  opacity: 0.75;
+}
+
+.note__text {
+  font-family: var(--font-body);
+  font-size: clamp(0.92rem, 1.45vw, 1.4rem);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* The rolled ends of the scroll. The bottom one rides a rail the full height
+   of the note, so it can travel down as the sheet unrolls. */
+.note__rail {
+  position: absolute;
+  inset: 0;
+}
+
+.note__roll {
+  position: absolute;
+  left: -9px;
+  right: -9px;
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--parchment) 70%, white) 0%,
+    var(--parchment) 38%,
+    var(--parchment-deep) 100%
+  );
+}
+
+.note__roll--top {
+  top: -7px;
+}
+
+.note__roll--bottom {
+  bottom: -7px;
+}
+
+@media (min-width: 768px) {
+  .notes {
+    --note-cols: 4;
+  }
+
+  /* a whole number of grid columns, level with the bend */
+  .note {
+    transform: translateY(-50%);
+    width: calc(
+      (100% - 2 * var(--grid-margin) - (var(--grid-cols) - 1) * var(--grid-gutter)) / var(--grid-cols) *
+        var(--note-cols) + (var(--note-cols) - 1) * var(--grid-gutter)
+    );
+  }
+}
+
+@media (min-width: 1200px) {
+  .notes {
+    --note-cols: 5;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Drop
+------------------------------------------------------------------ */
 /* Fixed to the viewport: while it rides the ribbon only its x changes, so it
    never jitters against the scroll. */
 .drop {
@@ -82,13 +196,4 @@
   width: 100%;
   height: 100%;
   overflow: visible;
-}
-
-/* Glint that marks the drop in the video the moment ours takes over. */
-.drop__ring {
-  position: absolute;
-  inset: -40%;
-  border: 1.5px solid #fff6e1;
-  border-radius: 50%;
-  opacity: 0;
 }

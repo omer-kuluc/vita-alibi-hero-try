@@ -26,16 +26,14 @@
   inset: 0;
 }
 
-/* The video's own edge columns, stretched sideways. On wide screens this
-   carries the sky, horizon and sea out to the viewport edges. */
+/* The video's own edge columns at very low resolution, stretched across the
+   hero. The browser's upscaling does the blurring, so no filter is needed. */
 .hero__ambient {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   max-width: none;
-  filter: blur(26px) saturate(1.05);
-  transform: scale(1.1);
 }
 
 /* Full height, natural width, centred. On screens narrower than the video's
@@ -51,12 +49,6 @@
   transform: translateX(-50%);
 }
 
-@media (min-aspect-ratio: 576 / 688) {
-  .hero__video {
-    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18%, #000 82%, transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0, #000 18%, #000 82%, transparent 100%);
-  }
-}
 
 .hero__shade {
   position: absolute;
@@ -210,6 +202,23 @@
   background: var(--c-light);
   opacity: 0;
   pointer-events: none;
+}
+
+/* Thin bar while the video frames are still arriving. */
+.hero__loading {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--c-white);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s linear, opacity 0.6s ease 0.2s;
+}
+
+.hero__loading.is-done {
+  opacity: 0;
 }
 
 /* ------------------------------------------------------------------
