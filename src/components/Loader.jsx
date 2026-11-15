@@ -10,7 +10,7 @@ import './Loader.css'
 // slots and plain capitals in its lowercase ones.
 export default function Loader() {
   return (
-    <div className="loader" role="status" aria-label="Yükleniyor">
+    <div className="loader" role="status" aria-label="Loading">
       {/* The hero's first frame, out of focus: the loader is the hero before
           it has come into view. */}
       <div className="loader__bg" style={{ backgroundImage: `url(${VIDEO.frameSrc(0)})` }} />

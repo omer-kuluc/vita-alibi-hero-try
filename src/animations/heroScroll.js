@@ -31,8 +31,7 @@ export function createHeroScroll({ q, onProgress }) {
 
   // The type clears out as the camera starts moving towards the door.
   // Transforms and opacity only: these run on every scroll tick.
-  tl.to(q('.scroll-cue'), { opacity: 0, duration: 0.03 }, 0)
-    .to(q('.tagline'), { opacity: 0, y: -24, duration: 0.09, ease: 'power1.in' }, 0.015)
+  tl.to(q('.tagline'), { opacity: 0, y: -24, duration: 0.09, ease: 'power1.in' }, 0.015)
     .to(
       q('.logo__word'),
       { yPercent: -70, opacity: 0, duration: 0.15, stagger: 0.025, ease: 'power1.in' },
@@ -133,7 +132,7 @@ function bindFrames({ canvas, ambient, playhead, onProgress }) {
   let current = 0
   const tick = () => {
     const target = playhead.progress * (count - 1)
-    current += (target - current) * 0.25
+    current += (target - current) * (1 - Math.pow(0.75, gsap.ticker.deltaRatio(60)))
     if (Math.abs(target - current) < 0.01) current = target
     const index = Math.round(current)
     if (!dirty && index === drawn) return

@@ -70,7 +70,6 @@ export default function Trail() {
         <path className="ribbon__spine" pathLength="1" />
         <path className="ribbon__back" fill="url(#ribbon-back)" />
         <path className="ribbon__front" fill="url(#ribbon-front)" />
-        <path className="ribbon__edge" pathLength="1" />
       </svg>
 
       <div className="drop" aria-hidden="true">

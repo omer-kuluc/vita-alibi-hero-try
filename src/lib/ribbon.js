@@ -29,7 +29,7 @@ const fmt = (x, y) => `${x.toFixed(1)},${y.toFixed(1)}`
  */
 export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
   const narrow = width < 768
-  const amplitude = width * (narrow ? 0.3 : 0.25)
+  const amplitude = width * (narrow ? 0.355 : 0.25)
   const waves = WAVES
   const centre = width / 2
 
@@ -39,8 +39,8 @@ export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
   for (let i = 0; i <= SAMPLES; i++) {
     const v = i / SAMPLES
     // Swing in gently, then settle back to the centre before landing.
-    const envelope = smooth(0, 0.22, v) * (1 - smooth(0.86, 1, v))
-    const axis = x0 + (centre - x0) * smooth(0, 0.4, v)
+    const envelope = smooth(0, narrow ? 0.1 : 0.22, v) * (1 - smooth(0.86, 1, v))
+    const axis = x0 + (centre - x0) * smooth(0, narrow ? 0.1 : 0.4, v)
     px[i] = axis + amplitude * envelope * Math.sin(2 * Math.PI * waves * v)
     py[i] = y0 + v * span
   }
@@ -130,7 +130,6 @@ export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
     return { d, length }
   }
   const spine = stroke(0)
-  const edge = stroke(1)
   const fractionAt = (length, k) => {
     k = clamp(0, SAMPLES, k)
     const i = Math.min(SAMPLES - 1, Math.floor(k))
@@ -149,7 +148,6 @@ export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
     count: SAMPLES,
     bends,
     spineD: spine.d,
-    edgeD: edge.d,
     end: { x: px[SAMPLES], y: py[SAMPLES] },
 
     /** Everything needed to draw the ribbon up to sample `k` (may be fractional). */
@@ -168,13 +166,11 @@ export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
       const i = Math.min(SAMPLES - 1, Math.floor(k))
       const a = Math.max(0, i - 4)
       const b = Math.min(SAMPLES, i + 5)
-      const solid = Math.max(0, k - taper)
 
       return {
         front,
         back,
         spine: fractionAt(spine.length, k),
-        edge: fractionAt(edge.length, solid),
         x,
         y,
         // direction of travel, in degrees clockwise from straight down

@@ -69,7 +69,8 @@ export function createLoader({ q, reduced, onOpen }) {
   const tick = () => {
     const elapsed = (performance.now() - startedAt) / 1000
     const target = Math.min(actual, elapsed / MIN_SECONDS)
-    shown += (target - shown) * 0.07
+    // Scaled by frame time, so the count runs at the same pace on any display.
+    shown += (target - shown) * (1 - Math.pow(0.93, gsap.ticker.deltaRatio(60)))
     if (target - shown < 0.003) shown = target
     render(shown)
     if (shown >= 1) {

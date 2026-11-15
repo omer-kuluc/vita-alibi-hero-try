@@ -66,7 +66,6 @@ export function createIntro({ q, reduced }) {
       },
       1.55,
     )
-    .from(q('.scroll-cue__inner'), { opacity: 0, y: 10, duration: 1, ease: 'power2.out' }, 2.2)
 
   return () => tl.play()
 }

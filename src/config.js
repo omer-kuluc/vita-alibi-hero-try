@@ -15,7 +15,7 @@ export const VIDEO = {
 
 // One note per bend of the ribbon, in order.
 export const NOTES = [
-  'Vita Alibi, alternatif bir evrende sizlere tatil seçeneği sunan bir hizmet.',
-  'Hayatlarımız sürekli ilerlemek zorunda kaldığımız yollardan oluşuyor.',
-  'Ve bu yolların belirlediği rota, yol ayrımlarında yaptığımız seçimlerden oluşuyor.',
+  'Vita Alibi is a service that offers you a holiday in an alternate universe, one woven from fairy tales and dreams.',
+  'Our lives are made of roads we are always compelled to keep moving along.',
+  'And the route those roads take is shaped by the choices we make at every crossroads.',
 ]

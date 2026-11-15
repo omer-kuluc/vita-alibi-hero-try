@@ -28,14 +28,6 @@
   stroke-linejoin: round;
 }
 
-.ribbon__edge {
-  fill: none;
-  stroke: rgba(255, 246, 222, 0.8);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 /* ------------------------------------------------------------------
    Notes: one parchment per bend
 ------------------------------------------------------------------ */
@@ -44,7 +36,7 @@
      can stay white like the hero. Override these two per section. */
   --parchment: #8262ad;
   --parchment-deep: #5a3f88;
-  --note-cols: 2;
+  --note-cols: 3;
 
   position: absolute;
   left: 0;
@@ -56,11 +48,13 @@
 
 .note {
   position: absolute;
-  /* phones: just under half the width, the ribbon keeps the rest */
-  width: 47%;
-  /* ...and sit mostly below the bend: above it the ribbon is still crossing
-     over from the other side. */
-  transform: translateY(-6%);
+  /* A whole number of grid columns; the ribbon bends in what is left. */
+  width: calc(
+    (100% - 2 * var(--grid-margin) - (var(--grid-cols) - 1) * var(--grid-gutter)) / var(--grid-cols) *
+      var(--note-cols) + (var(--note-cols) - 1) * var(--grid-gutter)
+  );
+  /* level with the bend */
+  transform: translateY(-50%);
   visibility: hidden;
 }
 
@@ -149,14 +143,6 @@
     --note-cols: 4;
   }
 
-  /* a whole number of grid columns, level with the bend */
-  .note {
-    transform: translateY(-50%);
-    width: calc(
-      (100% - 2 * var(--grid-margin) - (var(--grid-cols) - 1) * var(--grid-gutter)) / var(--grid-cols) *
-        var(--note-cols) + (var(--note-cols) - 1) * var(--grid-gutter)
-    );
-  }
 }
 
 @media (min-width: 1200px) {

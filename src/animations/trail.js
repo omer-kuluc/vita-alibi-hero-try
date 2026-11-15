@@ -30,7 +30,6 @@ export function createTrail({ q, stage, reduced }) {
     spine: q('.ribbon__spine')[0],
     back: q('.ribbon__back')[0],
     front: q('.ribbon__front')[0],
-    edge: q('.ribbon__edge')[0],
     gradients: svg.querySelectorAll('linearGradient'),
   }
 
@@ -106,7 +105,6 @@ export function createTrail({ q, stage, reduced }) {
     })
     el.spine.setAttribute('d', ribbon.spineD)
     el.spine.style.strokeWidth = `${Math.max(3, ribbonWidth * 0.07)}px`
-    el.edge.setAttribute('d', ribbon.edgeD)
     el.shadow.setAttribute('transform', `translate(${ribbonWidth * 0.07} ${ribbonWidth * 0.11})`)
 
     // Each note sits level with its bend, on the side the ribbon leaves free.
@@ -138,10 +136,9 @@ export function createTrail({ q, stage, reduced }) {
       el.front.setAttribute('d', head.front)
       el.back.setAttribute('d', head.back)
       el.shadow.setAttribute('d', head.front + head.back)
-      // pathLength is normalised to 1 on both strokes
+      // pathLength is normalised to 1
       el.spine.style.strokeDasharray = `${head.spine} 2`
-      el.edge.style.strokeDasharray = `${head.edge} 2`
-      el.spine.style.visibility = el.edge.style.visibility = k > 0 ? 'visible' : 'hidden'
+      el.spine.style.visibility = k > 0 ? 'visible' : 'hidden'
       gsap.set(drop, { x: head.x, rotation: head.angle * 0.7 })
 
       notes.forEach((note) => {

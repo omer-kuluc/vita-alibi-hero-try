@@ -18,7 +18,8 @@ html.is-loading {
    animates opacity. The solid colour shows until the frame arrives. */
 .loader__bg {
   position: absolute;
-  inset: -8%;
+  /* overscan: a blurred layer goes transparent towards its own edges */
+  inset: -90px;
   background-color: #6b4672;
   background-size: cover;
   background-position: center;
@@ -29,7 +30,7 @@ html.is-loading {
      d   RE  am
      %   RE  ality                                                   */
 .loader__lockup {
-  --re: min(27vw, 30svh, 15rem);
+  --re: min(21vw, 30svh, 15rem);
 
   position: relative;
   display: grid;
