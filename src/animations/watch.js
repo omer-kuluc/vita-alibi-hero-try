@@ -8,12 +8,16 @@ import { VIDEO } from '../config'
  * are fractions of the pinned scroll distance:
  *
  *   0.00  the dial turns out of the drop to face the viewer, the strap grows
- *   0.10  ticks, Roman numerals and hands appear: an ordinary watch
+ *   0.12  ticks, Roman numerals and hands appear: an ordinary watch
  *   0.20  the hands tick on
  *   0.38  the hands spin up and the numerals leave
- *   0.55  the dial's face grows until it is the whole screen
+ *   0.55  the view goes into the dial until its face is the whole screen;
+ *         the hands are still turning as they fade
  *   0.68  six lines run out from the centre to six words
  *   0.84  CHOOSE is set at the centre
+ *
+ * Everything that moves is a layer of its own (will-change in Choose.css) and
+ * is only ever transformed or faded, so nothing is redrawn while scrolling.
  */
 export function createWatch({ q }) {
   const scene = q('.choose')[0]
@@ -26,7 +30,7 @@ export function createWatch({ q }) {
   const lines = q('.choose__line')
   const labels = q('.choose__label-text')
   const wordText = q('.choose__word-text')[0]
-  const word = SplitText.create(wordText, { type: 'chars' })
+  const word = SplitText.create(wordText, { type: 'chars', charsClass: 'choose__char' })
 
   // Each line runs from the edge of the CHOOSE lettering to just short of
   // its word, as measured on the page.
@@ -82,21 +86,24 @@ export function createWatch({ q }) {
   })
 
   // --- the watch forms ----------------------------------------------
+  // An even ease, so the dial grows by about the same amount for every step
+  // of the scroll instead of doing most of its growing in the first few.
   tl.fromTo(
     dial,
-    { rotationX: 82, scale: 0.08, autoAlpha: 0, transformPerspective: 900 },
-    { rotationX: 0, scale: 1, autoAlpha: 1, duration: 0.14, ease: 'power2.out' },
+    { rotationX: 82, scale: 0.08, transformPerspective: 900 },
+    { rotationX: 0, scale: 1, duration: 0.16, ease: 'sine.inOut', force3D: true },
     0,
   )
+    .fromTo(dial, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.03 }, 0)
     .fromTo(q('.strap__bottom'), { scaleY: 0 }, { scaleY: 1, duration: 0.13, ease: 'power1.out' }, 0.03)
     // the drop settles as the pin the hands turn on
     .fromTo(q('.drop__land'), { scale: 1 }, { scale: 0.5, duration: 0.08 }, 0.05)
-    .fromTo(q('.watch__ticks'), { opacity: 0 }, { opacity: 1, duration: 0.05 }, 0.1)
+    .fromTo(q('.watch__ticks'), { opacity: 0 }, { opacity: 1, duration: 0.05 }, 0.12)
     .fromTo(
       numerals,
       { opacity: 0, scale: 0.5 },
       { opacity: 1, scale: 1, duration: 0.05, stagger: 0.006, ease: 'power2.out' },
-      0.11,
+      0.13,
     )
 
   // --- time comes loose ---------------------------------------------
@@ -104,11 +111,15 @@ export function createWatch({ q }) {
     .to(q('.watch__ticks'), { opacity: 0, duration: 0.06 }, 0.5)
 
   // --- into the dial -------------------------------------------------
-  // The flat disc starts exactly over the face (88% of the dial's width).
+  // The flat disc starts exactly over the face (80% of the frame's width) and
+  // the dial grows with it on the same curve, so the two stay locked together
+  // all the way: one move into the dial, not two shapes growing apart.
   const faceScale = () => (frame.offsetWidth * 0.8) / flood.offsetWidth
+  const zoom = { duration: 0.13, ease: 'power2.in', force3D: true }
   tl.fromTo(flood, { opacity: 0 }, { opacity: 1, duration: 0.01 }, 0.54)
-    .fromTo(flood, { scale: faceScale }, { scale: 1.5, duration: 0.13, ease: 'power2.in' }, 0.55)
-    .to(dial, { scale: 2.6, autoAlpha: 0, duration: 0.1, ease: 'power2.in' }, 0.55)
+    .fromTo(flood, { scale: faceScale }, { scale: 1.5, ...zoom }, 0.55)
+    .to(dial, { scale: () => 1.5 / faceScale(), ...zoom }, 0.55)
+    .to(dial, { autoAlpha: 0, duration: 0.08, ease: 'power1.in' }, 0.56)
     .to(q('.drop__land'), { opacity: 0, duration: 0.04 }, 0.56)
     .fromTo(q('.choose__grain'), { opacity: 0 }, { opacity: 1, duration: 0.05 }, 0.66)
 
@@ -122,13 +133,13 @@ export function createWatch({ q }) {
     .fromTo(
       labels,
       { opacity: 0, y: (i) => (i < 3 ? 12 : -12) },
-      { opacity: 1, y: 0, duration: 0.06, stagger: 0.012, ease: 'power2.out' },
+      { opacity: 1, y: 0, duration: 0.06, stagger: 0.012, ease: 'power2.out', force3D: true },
       0.75,
     )
     .fromTo(
       word.chars,
       { opacity: 0, yPercent: 45 },
-      { opacity: 1, yPercent: 0, duration: 0.07, stagger: 0.012, ease: 'power2.out' },
+      { opacity: 1, yPercent: 0, duration: 0.07, stagger: 0.012, ease: 'power2.out', force3D: true },
       0.84,
     )
     // hold the finished screen for the last stretch of scroll
@@ -138,6 +149,11 @@ export function createWatch({ q }) {
   // On their own timeline, which follows the scroll with a little lag. Tied
   // rigidly to the scroll they would jump by whatever angle each wheel step
   // happens to cover; this way they glide.
+  //
+  // The timeline only moves these numbers. The angle that is drawn adds a
+  // drift on top (below), so the hands keep turning on their own once time
+  // has come loose, even while the scroll is at rest.
+  const turn = { minute: 60, hour: 305, loose: 0 }
   const hands = gsap.timeline({
     defaults: { ease: 'none' },
     scrollTrigger: {
@@ -148,19 +164,42 @@ export function createWatch({ q }) {
     },
   })
   hands
-    .fromTo([hour, minute], { scale: 0 }, { scale: 1, duration: 0.06, ease: 'back.out(1.6)' }, 0.12)
+    .fromTo([hour, minute], { scale: 0 }, { scale: 1, duration: 0.06, ease: 'back.out(1.6)' }, 0.15)
     // an ordinary watch, ticking on
-    .fromTo(minute, { rotation: 60 }, { rotation: 150, duration: 0.18 }, 0.2)
-    .fromTo(hour, { rotation: 305 }, { rotation: 312.5, duration: 0.18 }, 0.2)
-    // then time comes loose
-    .to(minute, { rotation: 150 + 540, duration: 0.2, ease: 'power1.in' }, 0.38)
-    .to(hour, { rotation: 312.5 + 45, duration: 0.2, ease: 'power1.in' }, 0.38)
+    .fromTo(turn, { minute: 60, hour: 305 }, { minute: 150, hour: 312.5, duration: 0.18 }, 0.2)
+    // then time comes loose: the hands speed up, and are at their fastest
+    // when the dial has faded out (0.64), so they never come to rest in view
+    .to(turn, { minute: 150 + 900, hour: 312.5 + 75, duration: 0.28, ease: 'power1.in' }, 0.38)
+    .fromTo(turn, { loose: 0 }, { loose: 1, duration: 0.05 }, 0.38)
     .set({}, {}, 1)
+
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const setMinute = gsap.quickSetter(minute, 'rotation', 'deg')
+  const setHour = gsap.quickSetter(hour, 'rotation', 'deg')
+  // degrees per second
+  const DRIFT = { minute: 40, hour: 10 }
+  const drift = { minute: 0, hour: 0 }
+  let drawnMinute = NaN
+  let drawnHour = NaN
+  const tick = (time, delta) => {
+    // Only while the dial is in view, and only once fully loose: each drift
+    // wraps at a whole turn, which is seamless at full strength.
+    if (!still && turn.loose === 1 && tl.progress() < 0.66) {
+      drift.minute = (drift.minute + (delta / 1000) * DRIFT.minute) % 360
+      drift.hour = (drift.hour + (delta / 1000) * DRIFT.hour) % 360
+    }
+    const m = turn.minute + drift.minute * turn.loose
+    const h = turn.hour + drift.hour * turn.loose
+    if (m !== drawnMinute) setMinute((drawnMinute = m))
+    if (h !== drawnHour) setHour((drawnHour = h))
+  }
+  gsap.ticker.add(tick)
 
   layout()
   ScrollTrigger.addEventListener('refresh', layout)
 
   return () => {
+    gsap.ticker.remove(tick)
     ScrollTrigger.removeEventListener('refresh', layout)
   }
 }

@@ -60,6 +60,7 @@
   box-shadow: calc(var(--ribbon-w) * 0.07) calc(var(--ribbon-w) * 0.11) 0 rgba(96, 40, 112, 0.16);
   transform: scaleY(0);
   transform-origin: top;
+  will-change: transform;
 }
 
 /* buckle holes */
@@ -102,6 +103,10 @@
   /* one unit of the drawing's 220-unit viewBox */
   --u: calc(var(--dial) * 1.1 / 220);
   visibility: hidden;
+  /* One layer for the whole watch: it is drawn once at full size, and
+     growing it is then a matter of scaling that picture. Without this the
+     dial is redrawn at every size on the way, which shows as a shiver. */
+  will-change: transform, opacity;
 }
 
 .watch__layer {
@@ -122,8 +127,10 @@
   fill: #e4572c;
 }
 
+/* Purple, orange and cream are the project's three colours: the ring takes
+   the parchment's purple. */
 .watch__ring {
-  fill: #ffcb68;
+  fill: var(--c-purple);
 }
 
 .watch__face {
@@ -188,7 +195,7 @@
   width: calc(var(--u) * 9);
   height: calc(var(--u) * 9);
   border-radius: 50%;
-  background: #ffcb68;
+  background: var(--c-light);
 }
 
 /* The dial's face, as one flat disc the size of the screen. It starts at the
@@ -246,6 +253,15 @@
 .choose__word-text {
   display: inline-block;
   white-space: nowrap;
+}
+
+/* Letters and words that slide in with the scroll each keep a layer: drawn
+   once, then only moved. Otherwise the text is drawn again at every
+   in-between position and appears to tremble on a small scroll. */
+.choose__char,
+.choose__label-text {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 /* Two rows of words on the grid: the outer ones sit on column edges, the

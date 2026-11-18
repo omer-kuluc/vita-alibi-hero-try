@@ -3,6 +3,14 @@ html.is-loading {
   overflow: hidden;
 }
 
+/* Keep the scrollbar's space while it is hidden. Otherwise the page gets
+   narrower the moment scrolling is allowed: the hero jumps sideways, and the
+   ribbon, which was measured against the wider page, no longer lines up with
+   the watch at its end. */
+html {
+  scrollbar-gutter: stable;
+}
+
 .loader {
   position: fixed;
   inset: 0;

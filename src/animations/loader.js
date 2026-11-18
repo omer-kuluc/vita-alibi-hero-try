@@ -1,4 +1,5 @@
 import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { fontsReady } from './intro'
 
 // Even with every frame cached the sequence takes at least this long, so the
@@ -25,6 +26,7 @@ export function createLoader({ q, reduced, onOpen }) {
   const html = document.documentElement
 
   html.classList.add('is-loading')
+  const widthWhileLoading = html.clientWidth
 
   let actual = 0
   let shown = 0
@@ -46,6 +48,9 @@ export function createLoader({ q, reduced, onOpen }) {
   const finish = () => {
     root.style.display = 'none'
     html.classList.remove('is-loading')
+    // The page can scroll from here on. Where that changes its width, measure
+    // everything that was laid out from it again.
+    if (html.clientWidth !== widthWhileLoading) ScrollTrigger.refresh()
     window.dispatchEvent(new Event('loader:done'))
   }
 

@@ -18,4 +18,5 @@ export const NOTES = [
   'Vita Alibi is a service that offers you a holiday in an alternate universe, one woven from fairy tales and dreams.',
   'Our lives are made of roads we are always compelled to keep moving along.',
   'And the route those roads take is shaped by the choices we make at every crossroads.',
+  'And we make all of these choices while our time is swiftly running out.',
 ]

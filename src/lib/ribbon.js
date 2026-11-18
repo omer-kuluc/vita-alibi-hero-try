@@ -9,8 +9,6 @@
 
 const NIB_ANGLE = (-45 * Math.PI) / 180
 const SAMPLES = 640
-// One and a half waves: three bends, one for each note.
-const WAVES = 1.5
 
 const clamp = (min, max, v) => Math.min(max, Math.max(min, v))
 const smooth = (a, b, v) => {
@@ -28,14 +26,26 @@ const fmt = (x, y) => `${x.toFixed(1)},${y.toFixed(1)}`
  * @param {number} o.tail   length, at the end of the span, that runs straight
  *                          down the centre: it becomes the watch strap
  * @param {number} o.ribbonWidth  width of the nib
+ * @param {number} o.waves  how many waves the meander makes; each one is two
+ *                          bends
+ * @param {boolean} o.narrow  phone layout: wider swings that start sooner
  */
-export function buildRibbon({ x0, y0, width, span, tail = 0, ribbonWidth }) {
-  const narrow = width < 768
+export function buildRibbon({
+  x0,
+  y0,
+  width,
+  span,
+  tail = 0,
+  ribbonWidth,
+  waves = 1.5,
+  narrow = width < 768,
+}) {
   const amplitude = width * (narrow ? 0.355 : 0.25)
-  const waves = WAVES
   const centre = width / 2
   // Share of the span that meanders; the rest is the straight tail.
   const meander = (span - tail) / span
+  // The swing dies away after the last bend, not across it: a note sits there.
+  const settle = 1 - 0.25 / waves + 0.027
 
   // --- centreline ---------------------------------------------------
   const px = new Float64Array(SAMPLES + 1)
@@ -44,7 +54,7 @@ export function buildRibbon({ x0, y0, width, span, tail = 0, ribbonWidth }) {
     // v runs 0..1 along the meander and stays at 1 down the tail.
     const v = Math.min(1, i / SAMPLES / meander)
     // Swing in gently, then settle back to the centre before the tail.
-    const envelope = smooth(0, narrow ? 0.1 : 0.22, v) * (1 - smooth(0.86, 1, v))
+    const envelope = smooth(0, narrow ? 0.1 : 0.22, v) * (1 - smooth(settle, 1, v))
     const axis = x0 + (centre - x0) * smooth(0, narrow ? 0.1 : 0.4, v)
     px[i] = axis + amplitude * envelope * Math.sin(2 * Math.PI * waves * v)
     py[i] = y0 + (i / SAMPLES) * span

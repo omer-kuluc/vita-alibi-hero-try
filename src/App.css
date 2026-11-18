@@ -13,6 +13,8 @@
   --c-coral: #ef5a32;
   --c-rose: #f09a9c;
   --c-lavender: #a981c2;
+  --c-purple: #8262ad; /* the parchment, and the ring around the watch */
+  --c-purple-deep: #5a3f88;
   --c-dusk: #2c1d57;
 
   /* 4 / 8 / 12 column grid */
@@ -28,7 +30,9 @@
 
   /* Scroll lengths */
   --hero-scroll: 240vh; /* how long the hero stays pinned while the video plays */
-  --journey-h: 190vh;
+  /* Phones need a fourth bend to make room for the fourth note; on wider
+     screens that note sits beside the straight end of the ribbon. */
+  --journey-h: 270vh;
   --choose-scroll: 300vh; /* how long the watch scene stays pinned */
   --c-watch: #f1652f; /* the ribbon's final colour: strap, dial and the CHOOSE screen */
 
@@ -40,6 +44,8 @@
     --grid-cols: 8;
     --grid-margin: 32px;
     --grid-gutter: 20px;
+
+    --journey-h: 230vh;
 
     --logo-size: min(16.5vw, 17svh);
     --escape-size: min(23.6vw, 27svh);

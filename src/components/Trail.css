@@ -34,8 +34,8 @@
 .notes {
   /* The parchment is coloured for the section it sits on, so the text on it
      can stay white like the hero. Override these two per section. */
-  --parchment: #8262ad;
-  --parchment-deep: #5a3f88;
+  --parchment: var(--c-purple);
+  --parchment-deep: var(--c-purple-deep);
   --note-cols: 3;
 
   position: absolute;
@@ -69,16 +69,46 @@
 .note__body {
   position: relative;
   transform: rotate(-1.6deg);
-  filter: drop-shadow(0 14px 18px rgba(74, 40, 96, 0.22));
 }
 
 .note.is-right .note__body {
   transform: rotate(1.4deg);
 }
 
+/* Everything that moves while a note unrolls is its own layer and moves by
+   transform alone, so nothing is repainted along the way.
+
+   The shadow is a separate box that is stretched as the sheet unrolls. As a
+   filter on the note it had to be worked out again on every frame. */
+.note__shadow {
+  position: absolute;
+  inset: 0 1%;
+  box-shadow: 0 14px 18px rgba(74, 40, 96, 0.22);
+  transform-origin: top;
+  will-change: transform;
+}
+
+/* The sheet is revealed by two opposite moves: this window slides down while
+   the sheet inside it slides up by the same amount, so the sheet stays put
+   and only the window's lower edge travels. */
+.note__unroll {
+  position: relative;
+  overflow: hidden;
+  will-change: transform;
+}
+
 .note__sheet {
+  position: relative;
   padding: clamp(22px, 2.4vw, 38px) clamp(18px, 2.2vw, 36px) clamp(24px, 2.6vw, 40px);
   color: var(--c-white);
+  will-change: transform;
+}
+
+/* The torn paper itself, behind the text. */
+.note__paper {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 5px),
     linear-gradient(
@@ -100,6 +130,7 @@
   line-height: 1;
   letter-spacing: 0.3em;
   opacity: 0.75;
+  will-change: opacity;
 }
 
 .note__text {
@@ -109,11 +140,19 @@
   text-wrap: pretty;
 }
 
+/* Each word keeps its own layer: drawn once, then only moved. Without it the
+   text is drawn again at every in-between position, which reads as a shiver. */
+.note__word {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
 /* The rolled ends of the scroll. The bottom one rides a rail the full height
    of the note, so it can travel down as the sheet unrolls. */
 .note__rail {
   position: absolute;
   inset: 0;
+  will-change: transform;
 }
 
 .note__roll {
@@ -136,6 +175,7 @@
 
 .note__roll--bottom {
   bottom: -7px;
+  box-shadow: 0 7px 9px rgba(74, 40, 96, 0.16);
 }
 
 @media (min-width: 768px) {
@@ -143,10 +183,19 @@
     --note-cols: 4;
   }
 
+  /* Beside the straight end of the ribbon there is one column less to spare
+     than beside a bend. */
+  .note.is-tail {
+    --note-cols: 3;
+  }
 }
 
 @media (min-width: 1200px) {
   .notes {
+    --note-cols: 5;
+  }
+
+  .note.is-tail {
     --note-cols: 5;
   }
 }

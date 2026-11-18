@@ -42,24 +42,24 @@ export function createTrail({ q, stage, reduced }) {
   // Each note unrolls like a scroll, then its words settle in.
   const notes = q('.note').map((note) => {
     const find = gsap.utils.selector(note)
-    const split = SplitText.create(find('.note__text'), { type: 'words' })
+    const split = SplitText.create(find('.note__text'), { type: 'words', wordsClass: 'note__word' })
     const tl = gsap.timeline({ paused: true })
 
     if (reduced) {
       tl.set(note, { autoAlpha: 1 })
     } else {
+      // Transforms and opacity only (see Trail.css): the window and the rail
+      // come down, the sheet goes up inside the window by the same amount.
+      const unroll = { duration: 1, ease: 'power3.out', force3D: true }
       tl.set(note, { autoAlpha: 1 })
-        .fromTo(
-          find('.note__unroll'),
-          { clipPath: 'inset(0% 0% 100% 0%)' },
-          { clipPath: 'inset(0% 0% 0% 0%)', duration: 1, ease: 'power3.out' },
-          0,
-        )
-        .fromTo(find('.note__rail'), { yPercent: -100 }, { yPercent: 0, duration: 1, ease: 'power3.out' }, 0)
+        .fromTo(find('.note__unroll'), { yPercent: -100 }, { yPercent: 0, ...unroll }, 0)
+        .fromTo(find('.note__sheet'), { yPercent: 100 }, { yPercent: 0, ...unroll }, 0)
+        .fromTo(find('.note__rail'), { yPercent: -100 }, { yPercent: 0, ...unroll }, 0)
+        .fromTo(find('.note__shadow'), { scaleY: 0 }, { scaleY: 1, ...unroll }, 0)
         .from(find('.note__index'), { opacity: 0, duration: 0.5 }, 0.3)
         .from(
           split.words,
-          { opacity: 0, y: 10, duration: 0.6, stagger: 0.03, ease: 'power2.out' },
+          { opacity: 0, y: 10, duration: 0.6, stagger: 0.03, ease: 'power2.out', force3D: true },
           0.35,
         )
     }
@@ -90,10 +90,16 @@ export function createTrail({ q, stage, reduced }) {
     // from the bottom of the screen to the top. Its last stretch runs
     // straight down, so it can turn into the strap.
     const span = heroH + journeyH
-    const tail = heroH * 0.66
+    // Phones have no room beside the straight tail, so there the ribbon makes
+    // a fourth bend for the fourth note (and the journey is longer, see
+    // --journey-h). Either way the meander is 0.75 screens per bend.
+    // The same breakpoint as the CSS, which measures the window and not the
+    // page: the two differ by the width of the scrollbar.
+    const narrow = !window.matchMedia('(min-width: 768px)').matches
+    const tail = heroH * (narrow ? 0.7 : 1.06)
     const ribbonWidth = clamp(44, 170, width * 0.085)
 
-    ribbon = buildRibbon({ x0, y0, width, span, tail, ribbonWidth })
+    ribbon = buildRibbon({ x0, y0, width, span, tail, ribbonWidth, narrow, waves: narrow ? 2 : 1.5 })
     geo = { trackEnd, span, x0, y0 }
 
     const height = heroH + journeyH
@@ -122,13 +128,26 @@ export function createTrail({ q, stage, reduced }) {
     scene.style.setProperty('--cy', `${y0}px`)
 
     // Each note sits level with its bend, on the side the ribbon leaves free.
+    // Where the ribbon has fewer bends than there are notes, the rest sit
+    // beside its straight tail, on alternating sides. The last one is placed
+    // so that it has left the screen by the time the dial is full size.
+    const spots = ribbon.bends.slice(0, notes.length)
+    while (spots.length < notes.length) {
+      const y = y0 + span - heroH * (0.41 + 0.75 * (notes.length - 1 - spots.length))
+      spots.push({
+        y,
+        side: -spots[spots.length - 1].side,
+        k: ((y - y0) / span) * ribbon.count,
+        tail: true,
+      })
+    }
     notes.forEach((note, i) => {
-      const bend = ribbon.bends[i]
-      if (!bend) return
-      note.el.style.top = `${bend.y}px`
-      note.el.classList.toggle('is-left', bend.side > 0)
-      note.el.classList.toggle('is-right', bend.side < 0)
-      note.at = bend.k - ribbon.count * NOTE_LEAD
+      const spot = spots[i]
+      note.el.style.top = `${spot.y}px`
+      note.el.classList.toggle('is-left', spot.side > 0)
+      note.el.classList.toggle('is-right', spot.side < 0)
+      note.el.classList.toggle('is-tail', Boolean(spot.tail))
+      note.at = spot.k - ribbon.count * NOTE_LEAD
     })
 
     // The light at the end of the hero spreads from the same point.

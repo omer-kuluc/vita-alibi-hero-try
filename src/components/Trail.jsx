@@ -35,8 +35,10 @@ export default function Trail() {
         {NOTES.map((text, i) => (
           <article className="note" key={i}>
             <div className="note__body">
+              <i className="note__shadow" />
               <div className="note__unroll">
-                <div className="note__sheet" style={{ clipPath: SHEETS[i] }}>
+                <div className="note__sheet">
+                  <i className="note__paper" style={{ clipPath: SHEETS[i] }} />
                   <span className="note__index" aria-hidden="true">
                     {NUMERALS[i]}
                   </span>
