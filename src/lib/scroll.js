@@ -10,8 +10,28 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 // growing to fill the screen) shows those steps as a shiver.
 //
 // Lenis knows the position before rounding, so that is what is read here.
+//
+// One thing is left to iron out. At the end of every scroll gesture Lenis
+// stops easing and jumps the rest of the way: first to its target as soon as
+// the two round to the same pixel, then to wherever the browser rounded that.
+// Together that can be a full pixel in one frame, which the same circles show
+// as a small hop just as the scroll comes to rest. So the position handed out
+// here follows Lenis through a short ease, and is never allowed to trail it by
+// more than a few pixels: in motion that is a constant offset nobody can see,
+// and at rest it turns the jump into a glide. The ease is applied twice over,
+// so the glide also starts gently instead of with a kick.
+
+const SLACK = 1.5 // px, per stage
+const FOLLOW = 0.12 // share of the remaining distance covered per 60fps frame
 
 let lenis = null
+let middle = 0
+let smooth = 0
+
+const follow = (from, to, share) => {
+  const next = from + (to - from) * share
+  return gsap.utils.clamp(to - SLACK, to + SLACK, next)
+}
 const listeners = new Set()
 const emit = () => listeners.forEach((fn) => fn())
 
@@ -27,18 +47,29 @@ window.addEventListener(
 export const pageScroll = {
   /** Scroll position in px, including the fraction the browser rounds away. */
   get y() {
-    return lenis ? lenis.scroll : window.scrollY
+    return lenis ? smooth : window.scrollY
   },
 
   /** Read the position from this Lenis instance. Returns a function to undo it. */
   attach(instance) {
     lenis = instance
-    lenis.on('scroll', emit)
+    middle = smooth = lenis.scroll
     emit()
     return () => {
-      instance.off('scroll', emit)
       if (lenis === instance) lenis = null
     }
+  },
+
+  /** Once per frame, right after Lenis has moved: follow it and tell everyone. */
+  tick() {
+    if (!lenis) return
+    const raw = lenis.scroll
+    if (smooth === raw) return
+    const share = 1 - Math.pow(1 - FOLLOW, gsap.ticker.deltaRatio(60))
+    middle = follow(middle, raw, share)
+    smooth = follow(smooth, middle, share)
+    if (Math.abs(raw - smooth) < 0.005) middle = smooth = raw
+    emit()
   },
 
   /** Call `fn` whenever the position changes. Returns a function to stop. */

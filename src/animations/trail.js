@@ -190,7 +190,8 @@ export function createTrail({ q, stage, reduced }) {
 
     // Handover. Once the watch scene is pinned the ribbon scrolls away with
     // the page, so an identical copy of its tail takes over inside the scene.
-    const pinned = scrolled >= geo.span
+    // Decided from the browser's own position: that is what pins the scene.
+    const pinned = window.scrollY - geo.trackEnd >= geo.span
     if (pinned !== handedOver) {
       handedOver = pinned
       strap.style.visibility = pinned ? 'visible' : 'hidden'

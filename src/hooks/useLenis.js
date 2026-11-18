@@ -11,7 +11,12 @@ export function useLenis() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 })
-    const raf = (time) => lenis.raf(time * 1000)
+    // The animations read their position from Lenis (see lib/scroll.js), in
+    // the same frame and after it has moved.
+    const raf = (time) => {
+      lenis.raf(time * 1000)
+      pageScroll.tick()
+    }
 
     // Hold still until the opening sequence has finished.
     const release = () => lenis.start()
@@ -19,7 +24,6 @@ export function useLenis() {
     window.addEventListener('loader:done', release)
 
     lenis.on('scroll', ScrollTrigger.update)
-    // The animations read their position from Lenis (see lib/scroll.js).
     const detach = pageScroll.attach(lenis)
     gsap.ticker.add(raf)
     gsap.ticker.lagSmoothing(0)
