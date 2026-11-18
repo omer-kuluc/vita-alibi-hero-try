@@ -11,6 +11,7 @@ import './App.css'
 import Hero from './components/Hero'
 import Journey from './components/Journey'
 import Trail from './components/Trail'
+import Choose from './components/Choose'
 import GridOverlay from './components/GridOverlay'
 import Loader from './components/Loader'
 import { useLenis } from './hooks/useLenis'
@@ -18,6 +19,7 @@ import { createIntro } from './animations/intro'
 import { createLoader } from './animations/loader'
 import { createHeroScroll } from './animations/heroScroll'
 import { createTrail } from './animations/trail'
+import { createWatch } from './animations/watch'
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText)
 ScrollTrigger.config({ ignoreMobileResize: true })
@@ -39,11 +41,13 @@ function App() {
       const loader = createLoader({ q, reduced, onOpen: playIntro })
       const disposeHero = createHeroScroll({ q, onProgress: loader.setProgress })
       const disposeTrail = createTrail({ q, stage: stage.current, reduced })
+      const disposeWatch = createWatch({ q })
 
       return () => {
         loader.dispose()
         disposeHero()
         disposeTrail()
+        disposeWatch()
       }
     },
     { scope: stage },
@@ -53,6 +57,7 @@ function App() {
     <main className="stage" ref={stage}>
       <Hero />
       <Journey />
+      <Choose />
       <Trail />
       <Loader />
       <GridOverlay />

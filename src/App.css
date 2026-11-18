@@ -28,7 +28,9 @@
 
   /* Scroll lengths */
   --hero-scroll: 240vh; /* how long the hero stays pinned while the video plays */
-  --journey-h: 250vh;
+  --journey-h: 190vh;
+  --choose-scroll: 300vh; /* how long the watch scene stays pinned */
+  --c-watch: #f1652f; /* the ribbon's final colour: strap, dial and the CHOOSE screen */
 
   --drop-size: clamp(38px, 3.8vw, 64px);
 }
@@ -68,6 +70,9 @@ body {
 
 .stage {
   position: relative;
+  /* Shows through the watch scene, whose own background is transparent so
+     the ribbon behind it stays visible. */
+  background: var(--c-light);
   /* `clip`, not `hidden`: hidden would turn this into a scroll container
      and break the sticky hero. */
   overflow-x: clip;

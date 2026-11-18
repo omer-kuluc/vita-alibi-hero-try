@@ -56,7 +56,9 @@ export default function Trail() {
         <defs>
           <linearGradient id="ribbon-front" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0" stopColor="#ffa53a" />
-            <stop offset="0.5" stopColor="#ff8a2b" />
+            <stop offset="0.4" stopColor="#ff8a2b" />
+            {/* flat from here on: this is the colour of the strap and watch */}
+            <stop offset="0.74" stopColor="#f1652f" />
             <stop offset="1" stopColor="#f1652f" />
           </linearGradient>
           <linearGradient id="ribbon-back" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2="1">

@@ -8,7 +8,7 @@ const clamp = (min, max, v) => Math.min(max, Math.max(min, v))
 
 // How far before the outermost point of a bend its note starts to unroll,
 // as a share of the ribbon's length.
-const NOTE_LEAD = 0.07
+const NOTE_LEAD = 0.055
 
 /**
  * The drop, the ribbon it draws, and the notes at the ribbon's bends.
@@ -33,10 +33,11 @@ export function createTrail({ q, stage, reduced }) {
     gradients: svg.querySelectorAll('linearGradient'),
   }
 
-  // At the end of the ribbon the drop simply sinks away.
-  const landing = gsap
-    .timeline({ paused: true })
-    .to(q('.drop__land'), { scale: 0, opacity: 0, duration: 0.45, ease: 'power2.in' })
+  // The watch scene that follows the journey. Its strap is a copy of the end
+  // of the ribbon (see the handover in update()).
+  const scene = q('.choose')[0]
+  const strap = q('.strap__ribbon')[0]
+  const strapPaths = q('.strap__ribbon path')
 
   // Each note unrolls like a scroll, then its words settle in.
   const notes = q('.note').map((note) => {
@@ -68,7 +69,7 @@ export function createTrail({ q, stage, reduced }) {
   let geo = null
   let ribbon = null
   let lastK = -1
-  let landed = false
+  let handedOver = null
 
   function layout() {
     const width = stage.clientWidth
@@ -84,12 +85,15 @@ export function createTrail({ q, stage, reduced }) {
     const x0 = clamp(width * 0.12, width * 0.88, (width - videoW) / 2 + VIDEO.drop.x * videoW)
     const y0 = VIDEO.drop.y * heroH
 
-    // Stop a little short of the page end, so the landing is always reached
-    // even when a mobile browser's toolbar changes the viewport height.
-    const span = journeyH - heroH * 0.14
+    // The ribbon ends at the centre of the watch, at the exact scroll position
+    // where the watch scene pins: one hero height of scroll brings the scene
+    // from the bottom of the screen to the top. Its last stretch runs
+    // straight down, so it can turn into the strap.
+    const span = heroH + journeyH
+    const tail = heroH * 0.66
     const ribbonWidth = clamp(44, 170, width * 0.085)
 
-    ribbon = buildRibbon({ x0, y0, width, span, ribbonWidth })
+    ribbon = buildRibbon({ x0, y0, width, span, tail, ribbonWidth })
     geo = { trackEnd, span, x0, y0 }
 
     const height = heroH + journeyH
@@ -107,6 +111,16 @@ export function createTrail({ q, stage, reduced }) {
     el.spine.style.strokeWidth = `${Math.max(3, ribbonWidth * 0.07)}px`
     el.shadow.setAttribute('transform', `translate(${ribbonWidth * 0.07} ${ribbonWidth * 0.11})`)
 
+    // Strap: the same outline as the ribbon's tail, drawn in the pinned scene.
+    // The scene's top edge is `span` below the top of the ribbon's overlay.
+    const tailD = ribbon.tail(span - 60)
+    strap.setAttribute('transform', `translate(0 ${-span})`)
+    strapPaths.forEach((path) => path.setAttribute('d', tailD))
+    strapPaths[0].setAttribute('transform', `translate(${ribbonWidth * 0.07} ${ribbonWidth * 0.11})`)
+    scene.style.setProperty('--strap-w', `${ribbon.halfWidth * 2}px`)
+    scene.style.setProperty('--ribbon-w', `${ribbonWidth}px`)
+    scene.style.setProperty('--cy', `${y0}px`)
+
     // Each note sits level with its bend, on the side the ribbon leaves free.
     notes.forEach((note, i) => {
       const bend = ribbon.bends[i]
@@ -122,6 +136,7 @@ export function createTrail({ q, stage, reduced }) {
     hero.style.setProperty('--drop-y', `${y0}px`)
 
     lastK = -1
+    handedOver = null
     update()
   }
 
@@ -151,15 +166,18 @@ export function createTrail({ q, stage, reduced }) {
       })
     }
 
-    // Past the end of the ribbon the drop stays with the page.
-    gsap.set(drop, { y: geo.y0 - Math.max(0, scrolled - geo.span) })
+    gsap.set(drop, { y: geo.y0 })
 
-    const isLanded = scrolled >= geo.span - 1
-    if (isLanded !== landed) {
-      landed = isLanded
-      // Scrolling back up, the drop should be back before the ribbon retreats.
-      if (landed) landing.timeScale(1).play()
-      else landing.timeScale(3).reverse()
+    // Handover. Once the watch scene is pinned the ribbon scrolls away with
+    // the page, so an identical copy of its tail takes over inside the scene.
+    const pinned = scrolled >= geo.span
+    if (pinned !== handedOver) {
+      handedOver = pinned
+      strap.style.visibility = pinned ? 'visible' : 'hidden'
+      // Only the ribbon's straight tail is on screen at this point, and the
+      // strap is drawn exactly over it. Hide the ribbon, or its shadow doubles
+      // up under the strap and its tip slides away beneath it.
+      svg.style.visibility = pinned ? 'hidden' : 'visible'
     }
   }
 
@@ -169,7 +187,6 @@ export function createTrail({ q, stage, reduced }) {
 
   return () => {
     trigger.kill()
-    landing.kill()
     notes.forEach((note) => note.tl.kill())
     ScrollTrigger.removeEventListener('refresh', layout)
   }

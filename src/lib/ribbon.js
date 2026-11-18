@@ -25,24 +25,29 @@ const fmt = (x, y) => `${x.toFixed(1)},${y.toFixed(1)}`
  * @param {number} o.y0     start y
  * @param {number} o.width  available width
  * @param {number} o.span   vertical distance the ribbon covers
+ * @param {number} o.tail   length, at the end of the span, that runs straight
+ *                          down the centre: it becomes the watch strap
  * @param {number} o.ribbonWidth  width of the nib
  */
-export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
+export function buildRibbon({ x0, y0, width, span, tail = 0, ribbonWidth }) {
   const narrow = width < 768
   const amplitude = width * (narrow ? 0.355 : 0.25)
   const waves = WAVES
   const centre = width / 2
+  // Share of the span that meanders; the rest is the straight tail.
+  const meander = (span - tail) / span
 
   // --- centreline ---------------------------------------------------
   const px = new Float64Array(SAMPLES + 1)
   const py = new Float64Array(SAMPLES + 1)
   for (let i = 0; i <= SAMPLES; i++) {
-    const v = i / SAMPLES
-    // Swing in gently, then settle back to the centre before landing.
+    // v runs 0..1 along the meander and stays at 1 down the tail.
+    const v = Math.min(1, i / SAMPLES / meander)
+    // Swing in gently, then settle back to the centre before the tail.
     const envelope = smooth(0, narrow ? 0.1 : 0.22, v) * (1 - smooth(0.86, 1, v))
     const axis = x0 + (centre - x0) * smooth(0, narrow ? 0.1 : 0.4, v)
     px[i] = axis + amplitude * envelope * Math.sin(2 * Math.PI * waves * v)
-    py[i] = y0 + v * span
+    py[i] = y0 + (i / SAMPLES) * span
   }
   const pointAt = (k) => {
     const i = Math.min(SAMPLES - 1, Math.floor(k))
@@ -140,7 +145,7 @@ export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
   // Where the meander turns: the outermost point of each bend.
   const bends = []
   for (let n = 0; n < waves * 2; n++) {
-    const i = Math.round(((0.25 + n * 0.5) / waves) * SAMPLES)
+    const i = Math.round(((0.25 + n * 0.5) / waves) * meander * SAMPLES)
     bends.push({ k: i, x: px[i], y: py[i], side: px[i] >= centre ? 1 : -1 })
   }
 
@@ -149,6 +154,18 @@ export function buildRibbon({ x0, y0, width, span, ribbonWidth }) {
     bends,
     spineD: spine.d,
     end: { x: px[SAMPLES], y: py[SAMPLES] },
+    /** Half the ribbon's horizontal width where it runs straight down. */
+    halfWidth: Math.abs(nx),
+
+    /** Outline of the finished ribbon from `fromY` down to its tip. */
+    tail(fromY) {
+      let start = 0
+      while (start < SAMPLES && py[start] < fromY) start++
+      let d = `M${taperedEdge(start, 1, SAMPLES)}`
+      for (let i = start + 1; i <= SAMPLES; i++) d += `L${taperedEdge(i, 1, SAMPLES)}`
+      for (let i = SAMPLES; i >= start; i--) d += `L${taperedEdge(i, -1, SAMPLES)}`
+      return d + 'Z'
+    },
 
     /** Everything needed to draw the ribbon up to sample `k` (may be fractional). */
     at(k) {

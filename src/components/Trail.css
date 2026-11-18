@@ -160,7 +160,8 @@
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 4;
+  /* above the watch scene: it becomes the pin at the centre of the dial */
+  z-index: 6;
   width: var(--drop-size);
   height: var(--drop-size);
   margin: calc(var(--drop-size) / -2) 0 0 calc(var(--drop-size) / -2);

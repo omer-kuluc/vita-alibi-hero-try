@@ -1,0 +1,316 @@
+/* Scroll distance for the watch scene; the scene sticks inside it. It sits
+   above the ribbon so the strap and the dial can cover the ribbon's end. */
+.choose-track {
+  position: relative;
+  z-index: 5;
+  height: calc(100vh + var(--choose-scroll));
+  height: calc(100svh + var(--choose-scroll));
+  pointer-events: none;
+}
+
+.choose {
+  /* Set from JS (src/animations/trail.js): the height the drop rides at,
+     which is where the dial is centred, and the ribbon's measurements. */
+  --cy: 51%;
+  --strap-w: 60px;
+  --ribbon-w: 85px;
+
+  /* Dial: the full grid width on phones, capped by the screen height. */
+  --dial: min(100vw - 2 * var(--grid-margin), 56svh, 34rem);
+  /* Distance from CHOOSE to the two rows of words. */
+  --dy: min(31svh, 19rem);
+
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  color: var(--c-white);
+  font-family: var(--font-display);
+}
+
+/* ------------------------------------------------------------------
+   Strap
+------------------------------------------------------------------ */
+.strap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  overflow: visible;
+}
+
+.strap__band {
+  fill: var(--c-watch);
+}
+
+.strap__shadow {
+  fill: rgba(96, 40, 112, 0.16);
+}
+
+.strap__bottom {
+  position: absolute;
+  left: 50%;
+  top: var(--cy);
+  bottom: -12px;
+  width: var(--strap-w);
+  margin-left: calc(var(--strap-w) / -2);
+  background: var(--c-watch);
+  box-shadow: calc(var(--ribbon-w) * 0.07) calc(var(--ribbon-w) * 0.11) 0 rgba(96, 40, 112, 0.16);
+  transform: scaleY(0);
+  transform-origin: top;
+}
+
+/* buckle holes */
+.strap__bottom::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 9%;
+  height: calc(var(--strap-w) * 1.8);
+  background: radial-gradient(circle, rgba(126, 38, 22, 0.42) 0 15%, transparent 17%) center top / 100%
+    calc(var(--strap-w) * 0.6) repeat-y;
+}
+
+/* ------------------------------------------------------------------
+   Watch
+------------------------------------------------------------------ */
+.watch {
+  position: absolute;
+  left: 50%;
+  top: var(--cy);
+  width: 0;
+  height: 0;
+}
+
+/* The viewBox is 10% larger than the dial, to leave room for the crown and
+   the shadow. */
+.watch__frame {
+  position: absolute;
+  left: calc(var(--dial) * -0.55);
+  top: calc(var(--dial) * -0.55);
+  width: calc(var(--dial) * 1.1);
+  height: calc(var(--dial) * 1.1);
+}
+
+.watch__dial {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* one unit of the drawing's 220-unit viewBox */
+  --u: calc(var(--dial) * 1.1 / 220);
+  visibility: hidden;
+}
+
+.watch__layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  overflow: visible;
+}
+
+.watch__shadow {
+  fill: rgba(96, 40, 112, 0.18);
+}
+
+.watch__bezel,
+.watch__crown {
+  fill: #e4572c;
+}
+
+.watch__ring {
+  fill: #ffcb68;
+}
+
+.watch__face {
+  fill: var(--c-watch);
+}
+
+.watch__fibres line {
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 0.5;
+}
+
+.watch__tick {
+  stroke: rgba(255, 250, 242, 0.6);
+  stroke-width: 0.6;
+  stroke-linecap: round;
+}
+
+.watch__tick--hour {
+  stroke: var(--c-white);
+  stroke-width: 1.3;
+}
+
+/* Centred on its point of the dial by GSAP (xPercent / yPercent). */
+.watch__numeral {
+  position: absolute;
+  left: calc(50% + var(--x) * var(--u));
+  top: calc(50% + var(--y) * var(--u));
+  font-size: calc(var(--u) * 11.5);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
+/* Each hand is a rounded bar that turns about a point near its foot. */
+.watch__hand {
+  --w: calc(var(--u) * 2);
+  --reach: calc(var(--u) * 60);
+  --foot: calc(var(--u) * 9);
+
+  position: absolute;
+  left: calc(50% - var(--w) / 2);
+  top: calc(50% - var(--reach));
+  width: var(--w);
+  height: calc(var(--reach) + var(--foot));
+  border-radius: var(--w);
+  background: var(--c-white);
+  transform-origin: 50% var(--reach);
+  will-change: transform;
+}
+
+.watch__hand--hour {
+  --w: calc(var(--u) * 3.4);
+  --reach: calc(var(--u) * 40);
+  --foot: calc(var(--u) * 7);
+}
+
+.watch__hub {
+  position: absolute;
+  left: calc(50% - var(--u) * 4.5);
+  top: calc(50% - var(--u) * 4.5);
+  width: calc(var(--u) * 9);
+  height: calc(var(--u) * 9);
+  border-radius: 50%;
+  background: #ffcb68;
+}
+
+/* The dial's face, as one flat disc the size of the screen. It starts at the
+   size of the face and grows until the watch is the whole view. */
+.watch__flood {
+  position: absolute;
+  left: -50vmax;
+  top: -50vmax;
+  width: 100vmax;
+  height: 100vmax;
+  border-radius: 50%;
+  background: var(--c-watch);
+  opacity: 0;
+  will-change: transform;
+}
+
+/* ------------------------------------------------------------------
+   CHOOSE
+------------------------------------------------------------------ */
+.choose__grain {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 5px);
+  opacity: 0;
+}
+
+.choose__lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+
+.choose__line {
+  stroke: rgba(255, 250, 242, 0.85);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.choose__word {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--cy);
+  transform: translateY(-50%);
+  text-align: center;
+  font-size: clamp(2rem, 5.2vw, 4.75rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+
+.choose__word-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Two rows of words on the grid: the outer ones sit on column edges, the
+   middle one is centred. */
+.choose__row {
+  position: absolute;
+  left: 0;
+  list-style: none;
+  padding-block: 0;
+  font-size: clamp(0.7rem, 1.25vw, 1.15rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.22em;
+}
+
+.choose__row--top {
+  bottom: calc(100% - var(--cy) + var(--dy));
+}
+
+.choose__row--bottom {
+  top: calc(var(--cy) + var(--dy));
+}
+
+.choose__label {
+  grid-row: 1;
+}
+
+.choose__label-text {
+  display: inline-block;
+  white-space: nowrap;
+  /* tracking adds a space after the last letter; pull it back in */
+  margin-right: -0.22em;
+}
+
+.choose__label--left {
+  grid-column: 1 / span 2;
+  text-align: left;
+}
+
+.choose__label--mid {
+  grid-column: 1 / -1;
+  text-align: center;
+}
+
+.choose__label--right {
+  grid-column: span 2 / -1;
+  text-align: right;
+}
+
+@media (min-width: 768px) {
+  .choose__label--left {
+    grid-column: 2 / span 2;
+  }
+
+  .choose__label--right {
+    grid-column: 6 / span 2;
+  }
+}
+
+@media (min-width: 1200px) {
+  .choose__label--left {
+    grid-column: 3 / span 3;
+  }
+
+  .choose__label--right {
+    grid-column: 8 / span 3;
+  }
+}
