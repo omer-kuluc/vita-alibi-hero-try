@@ -1,5 +1,6 @@
 import gsap from 'gsap'
 import { VIDEO } from '../config'
+import { scrub } from '../lib/scroll'
 
 // Share of the pinned scroll the video takes. The rest is the handover: the
 // drop appears on the last frame and the light behind the door takes over.
@@ -14,18 +15,11 @@ const VIDEO_END = 0.86
 export function createHeroScroll({ q, onProgress }) {
   const playhead = { progress: 0 }
 
-  const tl = gsap.timeline({
-    defaults: { ease: 'none' },
-    scrollTrigger: {
-      trigger: q('.hero-track')[0],
-      start: 'top top',
-      end: 'bottom bottom',
-      // No extra smoothing here: the handover has to be finished at exactly
-      // the scroll position where the hero is released. Lenis smooths the
-      // scroll itself, and the frames are eased separately below.
-      scrub: true,
-    },
-  })
+  // No smoothing of its own: the handover has to be finished at exactly the
+  // scroll position where the hero is released. Lenis smooths the scroll
+  // itself, the timeline follows its position to a fraction of a pixel (see
+  // lib/scroll.js), and the frames are eased separately below.
+  const tl = gsap.timeline({ defaults: { ease: 'none' }, paused: true })
 
   tl.to(playhead, { progress: 1, duration: VIDEO_END }, 0)
 
@@ -48,15 +42,25 @@ export function createHeroScroll({ q, onProgress }) {
   // the whole hero is one colour.
   tl.fromTo(q('.drop__reveal'), { opacity: 0 }, { opacity: 1, duration: 0.03 }, VIDEO_END)
     .fromTo(q('.drop__reveal'), { scale: 0.3 }, { scale: 1, duration: 0.11, ease: 'power1.inOut' }, 0.885)
-    .fromTo(q('.hero__bloom'), { scale: 0 }, { scale: 2.8, duration: 0.115, ease: 'power2.in' }, 0.88)
+    // A gentle curve and no more growth than it takes to cover the screen:
+    // the steeper this is, the further the edge of the light travels for each
+    // pixel scrolled.
+    .fromTo(q('.hero__bloom'), { scale: 0 }, { scale: 2.4, duration: 0.12, ease: 'power1.in' }, 0.875)
     .fromTo(q('.hero__wash'), { opacity: 0 }, { opacity: 1, duration: 0.05 }, 0.95)
 
-  return bindFrames({
+  const unscrub = scrub(tl, { trigger: q('.hero-track')[0], start: 'top top', end: 'bottom bottom' })
+
+  const disposeFrames = bindFrames({
     canvas: q('.hero__video')[0],
     ambient: q('.hero__ambient')[0],
     playhead,
     onProgress,
   })
+
+  return () => {
+    unscrub()
+    disposeFrames()
+  }
 }
 
 /**

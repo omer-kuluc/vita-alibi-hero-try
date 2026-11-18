@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
 import 'lenis/dist/lenis.css'
+import { pageScroll } from '../lib/scroll'
 
 /** Smooth scrolling, driven by GSAP's ticker so it shares a frame with ScrollTrigger. */
 export function useLenis() {
@@ -18,10 +19,13 @@ export function useLenis() {
     window.addEventListener('loader:done', release)
 
     lenis.on('scroll', ScrollTrigger.update)
+    // The animations read their position from Lenis (see lib/scroll.js).
+    const detach = pageScroll.attach(lenis)
     gsap.ticker.add(raf)
     gsap.ticker.lagSmoothing(0)
 
     return () => {
+      detach()
       window.removeEventListener('loader:done', release)
       gsap.ticker.remove(raf)
       lenis.destroy()

@@ -3,6 +3,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { SplitText } from 'gsap/SplitText'
 import { VIDEO } from '../config'
 import { buildRibbon } from '../lib/ribbon'
+import { pageScroll } from '../lib/scroll'
 
 const clamp = (min, max, v) => Math.min(max, Math.max(min, v))
 
@@ -161,7 +162,7 @@ export function createTrail({ q, stage, reduced }) {
 
   function update() {
     if (!geo) return
-    const scrolled = window.scrollY - geo.trackEnd
+    const scrolled = pageScroll.y - geo.trackEnd
     const k = clamp(0, 1, scrolled / geo.span) * ribbon.count
 
     if (k !== lastK) {
@@ -201,11 +202,11 @@ export function createTrail({ q, stage, reduced }) {
   }
 
   layout()
-  const trigger = ScrollTrigger.create({ start: 0, end: 'max', onUpdate: update })
+  const unsubscribe = pageScroll.subscribe(update)
   ScrollTrigger.addEventListener('refresh', layout)
 
   return () => {
-    trigger.kill()
+    unsubscribe()
     notes.forEach((note) => note.tl.kill())
     ScrollTrigger.removeEventListener('refresh', layout)
   }
